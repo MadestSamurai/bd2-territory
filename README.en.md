@@ -1,0 +1,85 @@
+# BD2 Territory
+
+> **Disclaimer:** Using this assistant carries risks, including account penalties, bans, game errors or data loss. This project is not affiliated with the game publisher and does not guarantee safe use. Review and follow the game rules; you are responsible for the risks and consequences of using this tool.
+
+English · [简体中文](README.md)
+
+[Download releases](https://github.com/MadestSamurai/bd2-territory/releases) · [Report an issue](https://github.com/MadestSamurai/bd2-territory/issues)
+
+A standalone Fantasia Territory assistant for BrownDust II on Windows. Automate mining, logging, recipe-based planting and harvesting, with optional cooking and layout preview, purchasing and import.
+
+## Download
+
+Current version: **0.3.0-beta.1**. One application includes Simplified Chinese and English. Start with a small planting budget and cooking batch when evaluating this beta.
+
+| Edition | Runtime | Recommended for |
+| --- | --- | --- |
+| **Portable** | Includes .NET; no separate installation | Most users |
+| **Lite** | Requires [.NET Desktop Runtime 8 x64](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) | Users with the desktop runtime who prefer a smaller download |
+
+Windows x64 only. Both editions have the same features. Each EXE works on its own; ZIP files include bilingual documentation and licenses. Verify downloads with `SHA256SUMS.txt`. No Python, .NET SDK or other BD2 tools are required. Lite needs **Desktop Runtime**, not just the regular .NET Runtime.
+
+## Quick start
+
+1. Start the game and enter your own Fantasia Territory. Keep one game instance and use the same Windows privileges for both programs.
+2. Select **Connect / update** and wait for “Territory detected”.
+3. Choose activities and a recipe. The list shows **actual dish names and ingredient ratios**; unavailable recipes explain why they are locked.
+4. Set the planting budget and select **Start automation**. Defaults: budget 1400, interval 500ms. A budget of 0 is unlimited.
+5. Select **Pause** or close the tool to stop further operations. Submitted actions still finish normally.
+
+To update from the private territory 0.2.0 tool, pause the old tool before connecting; the game can stay open. Switching from another standalone tool or the private workbench requires a normal game restart. Opening the EXE does not connect or start automation.
+
+## Features and settings
+
+| Setting / feature | Behavior |
+| --- | --- |
+| Mining and logging | Gather only mature resources; failed targets remain in a retry queue |
+| Farming | Plant batches of 100 of one crop, balancing inventory and growing crops against recipe requirements; needs 100 connected fields |
+| Recipes | Read current names, ingredients, seeds and unlock status; changes wait for the current planting batch |
+| Default recipe | Energizing Gnocchi, using a 5:3:2 ratio; the displayed name follows the game translation |
+| Automatic cooking | Off by default. Uses existing ingredients for the selected dish. Batch limit: 1–1000, default 100. Other activities continue when ingredients or output capacity are insufficient |
+| Movement | Checks physical obstacles and workers; can use the equipped vehicle and a short recovery dash |
+| Action interval | 100–60000ms, default 500; still waits for animations, loading and server responses |
+| Planting budget | Resets on each new run. Gathering continues when spent. Only planting uses this budget; cooking consumes existing ingredients |
+| Layouts | Farm, mining and logging templates or JSON import. Preview placement and cost, then explicitly purchase and import |
+
+Cooking does not buy ingredients, sell items or switch dishes. Unknown results keep their journal and pause further operations to avoid duplicate consumption. Check inventory and diagnostics; do not delete records to blindly retry.
+
+## Layout tools
+
+Pause automation and open **Layouts**. Choose an area and template or load a file. Select **Preview layout and cost**, review the quote, then **Purchase and import**.
+
+Existing facilities are reused and moved first; only missing items are purchased. Decorations use normal game prices, buildings use owned materials, and crafted furniture must already be owned. Other buildings, workers and crops are preserved. No land purchases or demolition. Clear occupied destinations first. A backup is saved before import; each placement waits for confirmation.
+
+**Export current territory** saves editable facility positions without account or worker identities. Layouts require the same terrain and unlocked areas.
+
+## Language
+
+First launch follows the system language. The top-right switch is saved separately and does not start, stop or reconfigure automation. Dish, crop and facility names follow the game language. Raw logs and low-level exceptions retain their original text.
+
+## Compatibility and limits
+
+The tool reads local client interfaces and generates an adapter when connecting, without locking to a release-date client version. Incompatible changes stop connection; compatibility with every future version is not guaranteed.
+
+No game DLLs, data tables, images, account data or private layouts are included. Building requires no game installation. Connecting requires the official Windows client, not an Android emulator.
+
+## Diagnostics and feedback
+
+Open **Connection and diagnostics**. Local data is stored in `%LOCALAPPDATA%\BD2Territory` and is not uploaded. It includes settings, account progress, cooking journals, layout backups and obstacle snapshots.
+
+Report the version, error text and reproduction steps. Share relevant logs only, never credentials or complete game resources. Keep the first connection error instead of repeatedly reconnecting.
+
+## Development and contributions
+
+Requires Windows, PowerShell and .NET 8 SDK. From this repository root:
+
+```powershell
+.\build.ps1 -Locked
+.\package.ps1 -Locked
+```
+
+Packages go to `dist/v0.3.0-beta.1/`. [Development](docs/DEVELOPMENT.md) · [Localization](docs/LOCALIZATION.md) · [Publication style](docs/PUBLICATION_STYLE.md) · [Release notes](docs/RELEASE_NOTES.md)
+
+## License
+
+Project code is licensed under [MIT](LICENSE). See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and `licenses/` for dependencies. Game content belongs to its respective rights holders.
