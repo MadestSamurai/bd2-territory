@@ -29,3 +29,11 @@ jobs:
           name: BD2Territory-win-x64
           path: dist/v*/*
           if-no-files-found: error
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: failure()
+        with:
+          name: package-diagnostics
+          path: |
+            .build/**/failure.txt
+            .build/**/results.json
+          if-no-files-found: ignore

@@ -116,7 +116,7 @@ public partial class TerritoryWindow : Window
  private sealed record CropRow(string Name,int Required,long Inventory,int Growing,string Growth);
  internal async Task SmokeAsync(string output)
  {
-  smoke=true;ui.Language.Select("zh-CN");ui.Apply();ShowActivated=false;ShowInTaskbar=false;Show();await Dispatcher.InvokeAsync(()=>{},DispatcherPriority.ApplicationIdle);
+  smoke=true;LanguageBox.SelectedIndex=0;ui.Language.Select("zh-CN");ui.Apply();ShowActivated=false;ShowInTaskbar=false;Show();await Dispatcher.InvokeAsync(()=>{},DispatcherPriority.ApplicationIdle);
   var checks=new List<string>();void Check(bool ok,string label){if(!ok)throw new InvalidOperationException(label);checks.Add(label);}
   Check(!link.Enabled&&!StartButton.IsEnabled&&TerritoryJson.Read<TerritoryControl>(Path.Combine(root,"control.json"))?.Enabled==false,"启动不自动操作游戏");
   Check(LoggingBox.IsChecked==true&&MiningBox.IsChecked==true&&FarmingBox.IsChecked==true,"默认三个项目可见并选中");

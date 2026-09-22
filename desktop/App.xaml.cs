@@ -20,8 +20,9 @@ public partial class App : Application
     try{var prepared=await Task.Run(()=>HookCompiler.Prepare(e.Args[1]));File.WriteAllText(e.Args[2],JsonSerializer.Serialize(prepared.Report));Shutdown();}
     catch(Exception ex){File.WriteAllText(e.Args[2],JsonSerializer.Serialize(new{Status="unsupported",Error=ex.ToString(),Injection=false}));Shutdown(1);}return;
    }
-   if(e.Args.Length==2&&e.Args[0]=="--smoke")
+   if(e.Args.Length==2&&(e.Args[0]=="--smoke"||e.Args[0]=="--smoke-en"))
    {
+    if(e.Args[0]=="--smoke-en")System.Globalization.CultureInfo.CurrentUICulture=new System.Globalization.CultureInfo("en-US");
     var output=Path.GetFullPath(e.Args[1]);Directory.CreateDirectory(output);
     try{var window=new TerritoryWindow(Path.Combine(output,"isolated",Guid.NewGuid().ToString("N")));MainWindow=window;await window.SmokeAsync(output);Shutdown();}
     catch(Exception ex){File.WriteAllText(Path.Combine(output,"failure.txt"),ex.ToString());Shutdown(1);}return;

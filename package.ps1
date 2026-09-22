@@ -23,7 +23,7 @@ foreach($flavor in @('Portable','Lite')){
     function RunCheck([string[]]$Arguments){
         $process=Start-Process -FilePath $exe -ArgumentList $Arguments -WorkingDirectory (Get-Location).Path -WindowStyle Hidden -PassThru
         if(-not $process.WaitForExit(30000)){throw "Packaged EXE check timed out: $flavor"}
-        if($process.ExitCode -ne 0){throw "Packaged EXE check failed: $flavor"}
+        if($process.ExitCode -ne 0){Get-ChildItem -LiteralPath $check -Filter failure.txt -Recurse | ForEach-Object {Get-Content -LiteralPath $_.FullName};throw "Packaged EXE check failed: $flavor"}
     }
     $identityPath=Join-Path $check 'identity.json'
     RunCheck @('--identity',('"'+$identityPath+'"'))
@@ -32,6 +32,7 @@ foreach($flavor in @('Portable','Lite')){
     RunCheck @('--smoke',('"'+$check+'"'))
     $ui=Get-Content (Join-Path $check 'results.json') -Raw | ConvertFrom-Json
     if($ui.status -ne 'pass' -or $ui.assertions.Count -lt 34){throw 'Packaged UI regression failed'}
+    RunCheck @('--smoke-en',('"'+(Join-Path $check 'english-system')+'"'))
     if($identity.batchSize -ne 100 -or $identity.ratio -ne '5:3:2' -or $identity.automaticStart){throw 'Recipe or automatic start identity differs'}
     if($ClientManaged){
         $clientReport=Join-Path $check 'client.json'
