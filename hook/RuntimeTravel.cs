@@ -48,7 +48,7 @@ namespace BD2Territory.Runtime
    var field=B.Read("Field.Instance",null);string state=B.Read("Field.MoveState",field)?.ToString();if(state=="DontMove"||state=="Anchored")return false;
    var manager=B.Singleton(typeof(FieldActionManager));if(manager==null||(bool)B.InvokeOn("Dash.Active",manager)||!(bool)B.InvokeOn("Dash.Can",manager)||(bool)B.InvokeOn("Dash.FieldAction",manager))return false;
    var data=B.Read("Dash.Data",manager);if(data==null||!(bool)B.InvokeOn("Dash.Ready",data))return false;
-   var agent=NavAgent();if(!localMoving&&(agent==null||!agent.isActiveAndEnabled||!agent.isOnNavMesh))return false;
+   var agent=NavAgent();if(c.UseNavMesh&&!localMoving&&(agent==null||!agent.isActiveAndEnabled||!agent.isOnNavMesh))return false;
    var from=player.transform.position;var filter=agent==null?new NavMeshQueryFilter():NavFilter(agent);var toward=finalDestination-from;toward.y=0;
    if(obstacle!=null){toward=from-obstacle.bounds.center;toward.y=0;}if(toward.sqrMagnitude<.001f)toward=Vector3.forward;
    double best=double.PositiveInfinity;Vector3 selected=Vector3.zero;
@@ -58,7 +58,7 @@ namespace BD2Territory.Runtime
     // Verify an escape corridor longer than the intended 1.2 m burst, plus a walkable landing.
     var p=from+direction*2.5f;NavMeshHit hit;
     double cost;
-    if(localMoving)
+    if(localMoving||!c.UseNavMesh)
     {
      Vector3 end,landing;
      if(!GroundPoint(p,out end)||!LocalEdge(Point(from),Point(end))||!GroundPoint(from+direction*1.2f,out landing))continue;
@@ -97,7 +97,11 @@ namespace BD2Territory.Runtime
    bool active=dashManager!=null&&(bool)B.InvokeOn("Dash.Active",dashManager);
    if(!travel.FinishDash(now,distance,active,c.DashRecovery)&&Obstacle(from,from+escapeDirection*.8f)==null&&NpcPathClear(from,from+escapeDirection*.8f))return;
    StopEscape();LocalStorage.Log("冲刺结束，按实际位置重算 target="+navigation.Target+" moved="+distance.ToString("F2")+" at="+from);
-   if(localMoving){if(!BeginLocalRoute(walkTarget,s,now,"dash_replan_physical"))SkipWalkTarget(walkTarget,s,now,"dash_replan_unavailable");return;}
+   ResumeRouteAfterDash(s,now,c);
+  }
+  private void ResumeNavMesh(TerritorySnapshot s,long now,TerritoryControl c)
+  {
+   var from=player.transform.position;
    B.InvokeOn("Player.ChangeMoveType",move,B.EnumObject("MoveKind","Navigation"));var agent=NavAgent();
    Vector3 chosen;double cost;var center=walkTarget is LifeFarmFieldObject farm?farm.GetFieldWorldCenter():walkTarget.transform.position;
    if(agent==null||!agent.isActiveAndEnabled||!agent.isOnNavMesh||!FindStand(walkTarget,center,.7f,from,NavFilter(agent),false,out chosen,out cost)||!navigation.Recover(now,cost))

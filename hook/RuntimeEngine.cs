@@ -390,7 +390,7 @@ namespace BD2Territory.Runtime
   {
    int id=target==null?navigation.Target:target.GetInstanceID();
    LocalStorage.Log("目标保留待重试 target="+id+" reason="+reason+" attempts="+navigation.Attempts+" remaining="+navigation.BestRemaining.ToString("F2"));
-   CaptureFailure(reason);StopMove();long until=now+TimeSpan.FromSeconds(15).Ticks;
+   CaptureFailure(reason);StopMove();ResetLocalRecovery();long until=now+TimeSpan.FromSeconds(15).Ticks;
    if(target is LifeGatheringObject resource){var key=ResourceKey(resource);if(!failures.TryGetValue(key,out var memory))failures[key]=memory=new TargetFailureMemory();memory.Failed(now);until=memory.Until;}
    skip[id]=until;
    if(target is LifeFarmFieldObject)targetFarm=null;else targetNode=null;
@@ -402,8 +402,10 @@ namespace BD2Territory.Runtime
    if(walkScene!=s.Scene)throw new InvalidOperationException("寻路期间场景发生变化，已停止移动；请确认领地位置后重新开始");
    if(walkTarget==null||(walkTarget is LifeGatheringObject node&&(!Harvestable(node)||!Enabled(Kind(node),c)))||(walkTarget is LifeFarmFieldObject farm&&(!c.Farming||!Empty(farm))))
    {StopMove();navigation.Reset();triedDestinations.Clear();s.Reason="移动目标已变化，重新选择";return;}
-   if(travel.Dashing){ContinueEscape(s,now,c);return;}
-   if(localMoving){ContinueLocal(s,now,c);return;}
+   ContinueRoute(s,now,c);
+  }
+  private void ContinueNavMesh(TerritorySnapshot s,long now,TerritoryControl c)
+  {
    if(now-lastPathCheck<TimeSpan.FromMilliseconds(300).Ticks)return;lastPathCheck=now;
    var from=player.transform.position;var agent=NavAgent();
    if(!NpcStandClear(walkDestination+Vector3.up*RootLift)){if(!BeginLocalRoute(walkTarget,s,now,"npc_destination_occupied"))SkipWalkTarget(walkTarget,s,now,"npc_destination_occupied");return;}
@@ -441,6 +443,10 @@ namespace BD2Territory.Runtime
   private bool Approach(Component target,Vector3 center,TerritorySnapshot s,long now,float radius,int angleStep=0)
   {
    if(navigation.Target!=target.GetInstanceID()){navigation.Select(target.GetInstanceID());triedDestinations.Clear();}travel.Select(target.GetInstanceID());
+   return StartRoute(target,center,s,now,radius);
+  }
+  private bool ApproachNavMesh(Component target,Vector3 center,TerritorySnapshot s,long now,float radius)
+  {
    if(navigation.Attempts>=NavigationProgress.MaxAttempts){if(!BeginLocalRoute(target,s,now,"approach_exhausted"))SkipWalkTarget(target,s,now,"approach_exhausted");return false;}
    StopMotion();
    // Keep the normal mode-switch / start / SetMoveNav sequence, without Field.Walk's ResumeNav callback.

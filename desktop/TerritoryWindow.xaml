@@ -31,6 +31,8 @@
       <TextBlock Text="{DynamicResource Ui35}" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,14"/>
       <WrapPanel Margin="0,0,0,18"><CheckBox x:Name="LoggingBox" Content="{DynamicResource Ui36}" Checked="SettingsChanged" Unchecked="SettingsChanged"/><CheckBox x:Name="MiningBox" Content="{DynamicResource Ui37}" Checked="SettingsChanged" Unchecked="SettingsChanged"/><CheckBox x:Name="FarmingBox" Content="{DynamicResource Ui38}" Checked="SettingsChanged" Unchecked="SettingsChanged"/></WrapPanel>
       <WrapPanel Margin="0,0,0,18"><CheckBox x:Name="VehicleBox" Content="{DynamicResource Ui39}" Checked="SettingsChanged" Unchecked="SettingsChanged" ToolTip="{DynamicResource Ui40}"/><CheckBox x:Name="DashBox" Content="{DynamicResource Ui41}" Checked="SettingsChanged" Unchecked="SettingsChanged" ToolTip="{DynamicResource Ui42}"/></WrapPanel>
+      <CheckBox x:Name="NavMeshBox" Content="{DynamicResource NavMeshLabel}" ToolTip="{DynamicResource NavMeshHint}" Margin="0,0,0,6" Checked="SettingsChanged" Unchecked="SettingsChanged"/>
+      <TextBlock Text="{DynamicResource NavMeshHint}" Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" Margin="0,0,0,18"/>
       <WrapPanel>
        <StackPanel Margin="0,0,28,8"><TextBlock Text="{DynamicResource Ui43}" Margin="0,0,0,6"/><TextBox x:Name="IntervalBox" Width="150" HorizontalAlignment="Left" LostFocus="SettingsChanged" AutomationProperties.Name="{DynamicResource Ui44}"/></StackPanel>
        <StackPanel Margin="0,0,0,8"><TextBlock Text="{DynamicResource Ui45}" Margin="0,0,0,6"/><TextBox x:Name="BudgetBox" Width="180" HorizontalAlignment="Left" LostFocus="SettingsChanged" AutomationProperties.Name="{DynamicResource Ui46}"/></StackPanel>

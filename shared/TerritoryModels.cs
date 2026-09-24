@@ -3,7 +3,7 @@ namespace BD2Territory
 {
  public static class TerritoryIdentity
  {
-  public const string RuntimeName="BD2Territory.Runtime14";
+  public const string RuntimeName="BD2Territory.Runtime15";
   public static string DataRoot=>System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"BD2Territory");
   public static bool IsGameProcessName(string name)=>string.Equals(name,"BrownDust II",StringComparison.OrdinalIgnoreCase)||string.Equals(name,"BrownDust II.exe",StringComparison.OrdinalIgnoreCase);
  }
@@ -11,6 +11,7 @@ namespace BD2Territory
  public class TerritorySettings
  {
   public bool Logging{get;set;}=true;public bool Mining{get;set;}=true;public bool Farming{get;set;}=true;
+  public bool UseNavMesh{get;set;}=false;
   public bool DashRecovery{get;set;}=true;public bool UseVehicle{get;set;}=true;
   public int RecipeId{get;set;}=3;public bool Cooking{get;set;}=false;public int CookingBatch{get;set;}=100;
   public int IntervalMs{get;set;}=500;public long PlantingBudget{get;set;}=1400;

@@ -64,5 +64,7 @@ static class UiLabels { public static readonly Dictionary<string,string> All=new
 {"Ui62","开始自动化"},
 {"Ui63","暂停"},
 {"Ui64","连接／更新组件"},
+{"NavMeshLabel","使用游戏 NavMesh 寻路（可选）"},
+{"NavMeshHint","默认关闭：使用 A* 网格计算绕障，按方向移动。关闭后立即改走 A*；开启后从下一次移动生效。"},
 {"CookingLabel","自动制作所选料理"},{"CookingBatchLabel","每批最多"},{"CookingHint","消耗已有原料，每批 1–1000 份；默认关闭，不自动出售。原料不足时继续采集和种植。"},
 };}

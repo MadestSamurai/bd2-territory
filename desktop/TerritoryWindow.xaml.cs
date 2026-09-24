@@ -16,12 +16,12 @@ public partial class TerritoryWindow : Window
  public TerritoryWindow(string? dataRoot=null)
  {
   root=dataRoot??TerritoryIdentity.DataRoot;link=new(root);InitializeComponent();InitializeLanguage();
-  Set(VersionText,"0.3.0 beta");
+  Set(VersionText,"0.3.1 beta");
   var settings=TerritoryJson.Read<TerritorySettings>(Path.Combine(root,"settings.json"))??new();
   if(!settings.ValidSettings())settings=new();
   selectedRecipe=settings.RecipeId;RecipeBox.ItemsSource=new[]{new RecipeOption{Id=selectedRecipe,Name=selectedRecipe==3?"活力面疙瘩":"配方 "+selectedRecipe,Available=true}};RecipeBox.SelectedValue=selectedRecipe;
   CookingBox.IsChecked=settings.Cooking;CookingBatchBox.Text=settings.CookingBatch.ToString();LoggingBox.IsChecked=settings.Logging;MiningBox.IsChecked=settings.Mining;FarmingBox.IsChecked=settings.Farming;
-  VehicleBox.IsChecked=settings.UseVehicle;DashBox.IsChecked=settings.DashRecovery;
+  NavMeshBox.IsChecked=settings.UseNavMesh;VehicleBox.IsChecked=settings.UseVehicle;DashBox.IsChecked=settings.DashRecovery;
   Set(IntervalBox,settings.IntervalMs.ToString());Set(BudgetBox,settings.PlantingBudget.ToString());Set(DataPathBox,root);
   link.Configure(settings);initialized=true;timer=new DispatcherTimer{Interval=TimeSpan.FromMilliseconds(500)};timer.Tick+=(_,_)=>{Refresh();};timer.Start();
   Closed+=(_,_)=>{closing=true;timer.Stop();link.Dispose();};
@@ -29,7 +29,7 @@ public partial class TerritoryWindow : Window
  private TerritorySettings Settings()
  {
   if(!int.TryParse(CookingBatchBox.Text,out int cookingBatch)||!int.TryParse(IntervalBox.Text,out int interval)||!long.TryParse(BudgetBox.Text,out long budget))throw new InvalidOperationException("间隔和预算请输入整数。");
-  var s=new TerritorySettings{Cooking=CookingBox.IsChecked==true,CookingBatch=cookingBatch,RecipeId=selectedRecipe,Logging=LoggingBox.IsChecked==true,Mining=MiningBox.IsChecked==true,Farming=FarmingBox.IsChecked==true,UseVehicle=VehicleBox.IsChecked==true,DashRecovery=DashBox.IsChecked==true,IntervalMs=interval,PlantingBudget=budget};
+  var s=new TerritorySettings{Cooking=CookingBox.IsChecked==true,CookingBatch=cookingBatch,RecipeId=selectedRecipe,Logging=LoggingBox.IsChecked==true,Mining=MiningBox.IsChecked==true,Farming=FarmingBox.IsChecked==true,UseNavMesh=NavMeshBox.IsChecked==true,UseVehicle=VehicleBox.IsChecked==true,DashRecovery=DashBox.IsChecked==true,IntervalMs=interval,PlantingBudget=budget};
   if(!s.ValidSettings())throw new InvalidOperationException("间隔范围 100–60000 毫秒，预算范围 0–10000000；料理每批 1–1000 份。");return s;
  }
  private void SettingsChanged(object sender,RoutedEventArgs e)
@@ -122,6 +122,7 @@ public partial class TerritoryWindow : Window
   Check(LoggingBox.IsChecked==true&&MiningBox.IsChecked==true&&FarmingBox.IsChecked==true,"默认三个项目可见并选中");
   Check(IntervalBox.Text=="500"&&BudgetBox.Text=="1400","默认间隔与预算");
   Check(VehicleBox.IsChecked==true&&DashBox.IsChecked==true,"默认开启载具赶路与冲刺脱困");
+  Check(NavMeshBox.IsChecked==false,"默认不启用 NavMesh，使用 A* 寻路");
   StartClick(this,new());Check(!link.Enabled&&ErrorText.Visibility==Visibility.Visible,"无心跳不能开始");ShowError("");
   var s=new TerritorySnapshot{Ready=true,ProcessId=424242,CapturedUtcTicks=DateTime.UtcNow.Ticks,Scene="Fantasia Territory",Fields=100,EmptyFields=38,Trees=8,Ores=5,Mature=12,BatchSeedId=2,BatchPlanted=100,CompletedBatches=3,Spent=100,GatherReplies=27,ReceivedItems=64,Crops=new[]{new CropStock{SeedId=2,Name="弯弯土豆",Required=5,Inventory=300,Growing=62,GrowthSeconds=60},new CropStock{SeedId=1,Name="黏糯小麦",Required=3,Inventory=200,Growing=0,GrowthSeconds=300},new CropStock{SeedId=4,Name="活力蘑菇",Required=2,Inventory=100,Growing=0,GrowthSeconds=900}}};
   void Feed(){s.CapturedUtcTicks=DateTime.UtcNow.Ticks;TerritoryJson.Write(Path.Combine(root,"latest.json"),s);Refresh();}
@@ -137,6 +138,8 @@ public partial class TerritoryWindow : Window
   VehicleBox.IsChecked=false;DashBox.IsChecked=false;command=TerritoryJson.Read<TerritoryControl>(Path.Combine(root,"control.json"));Check(command!=null&&!command.UseVehicle&&!command.DashRecovery,"运行时关闭移动辅助同步到组件");
   var saved=TerritoryJson.Read<TerritorySettings>(Path.Combine(root,"settings.json"));Check(saved!=null&&!saved.UseVehicle&&!saved.DashRecovery,"移动辅助偏好持久保存");VehicleBox.IsChecked=true;DashBox.IsChecked=true;
   command=TerritoryJson.Read<TerritoryControl>(Path.Combine(root,"control.json"));Check(command!=null&&command.UseVehicle&&command.DashRecovery,"运行时重新开启移动辅助");
+  NavMeshBox.IsChecked=true;command=TerritoryJson.Read<TerritoryControl>(Path.Combine(root,"control.json"));saved=TerritoryJson.Read<TerritorySettings>(Path.Combine(root,"settings.json"));Check(command?.UseNavMesh==true&&saved?.UseNavMesh==true,"显式启用 NavMesh 同步并持久保存");
+  NavMeshBox.IsChecked=false;command=TerritoryJson.Read<TerritoryControl>(Path.Combine(root,"control.json"));saved=TerritoryJson.Read<TerritorySettings>(Path.Combine(root,"settings.json"));Check(command?.UseNavMesh==false&&saved?.UseNavMesh==false&&link.Enabled,"运行中关闭 NavMesh 不停止自动化");
   s.OwnerId="previous-run";s.Error="old error";Feed();Check(link.Enabled,"旧会话错误不停止当前任务");s.OwnerId=link.OwnerId;s.Error="播种货币不足";Feed();Check(!link.Enabled&&ErrorText.Text==s.Error,"当前会话错误明确暂停");
   s.Error="";Feed();ShowError("");StartClick(this,new());StopClick(this,new());command=TerritoryJson.Read<TerritoryControl>(Path.Combine(root,"control.json"));Check(command?.Enabled==false&&command.UntilUtcTicks==0,"暂停立即撤销租约");
   s.CapturedUtcTicks=DateTime.UtcNow.AddSeconds(-20).Ticks;TerritoryJson.Write(Path.Combine(root,"latest.json"),s);Refresh();Check(!StartButton.IsEnabled,"过期心跳不能开始");
@@ -164,6 +167,8 @@ public partial class TerritoryWindow : Window
   LanguageBox.SelectedIndex=0;
   Width=720;Height=610;UpdateLayout();Check(StartButton.IsVisible&&StopButton.IsVisible&&ConnectButton.IsVisible,"最小窗口保留操作栏");
   StartClick(this,new());Close();command=TerritoryJson.Read<TerritoryControl>(Path.Combine(root,"control.json"));Check(command?.Enabled==false,"关闭窗口停止控制租约");
+  var restored=new TerritoryWindow(root);Check(restored.NavMeshBox.IsChecked==false,"重新打开仍默认 A*");restored.NavMeshBox.IsChecked=true;restored.Close();
+  restored=new TerritoryWindow(root);Check(restored.NavMeshBox.IsChecked==true,"重新打开保留主动选择的 NavMesh");restored.NavMeshBox.IsChecked=false;restored.Close();
   File.WriteAllText(Path.Combine(output,"results.json"),JsonSerializer.Serialize(new{status="pass",assertions=checks,isolatedRoot=root}));
  }
 }

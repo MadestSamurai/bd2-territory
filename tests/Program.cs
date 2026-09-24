@@ -1,6 +1,7 @@
 using BD2Territory;
 using System.Text.Json;
 CookingCases.Run();
+BD2Territory.Runtime.RoutingAdapterTests.Run();
 int checks=0;
 void Check(bool v,string why){checks++;if(!v)throw new Exception(why);}
 void Reject(Action a,string why){bool rejected=false;try{a();}catch(InvalidOperationException){rejected=true;}Check(rejected,why);}

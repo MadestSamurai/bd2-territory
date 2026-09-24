@@ -94,8 +94,8 @@ namespace BD2Territory.Runtime
   }
   private void ContinueLocal(TerritorySnapshot s,long now,TerritoryControl c)
   {
-   s.Reason="沿实体通路绕行，保持原目标";CancelVehicle();
-   if(vehiclePending){move.StopMove();s.Reason="等待载具加载结束后绕行";return;}
+   s.Reason="沿实体通路绕行，保持原目标";
+   if(vehiclePending){move.StopMove();localProgressAt=now;s.Reason="等待载具加载结束后绕行";return;}
    var field=B.Read("Field.Instance",null);string state=B.Read("Field.MoveState",field)?.ToString();
    if(state=="DontMove"||state=="Anchored"){move.ClearMove();s.Reason="等待游戏恢复角色移动";return;}
    if(localBudget.Expired(now)){SkipWalkTarget(walkTarget,s,now,"local_recovery_budget");return;}
@@ -112,10 +112,10 @@ namespace BD2Territory.Runtime
    var from=player.transform.position;
    if(!NpcStandClear(finalDestination)){RetryLocal(s,now,"npc_destination_occupied",finalDestination);return;}
    bool detected=walkTarget is LifeGatheringObject resource&&Detected(Kind(resource)).Contains(resource)&&InInteractionRange(walkTarget,from)&&StandClear(from);
-   if(detected||(localIndex>=localRoute.Length&&NpcStandClear(from)))
-   {int id=walkTarget.GetInstanceID();StopMove();navigation.Reset();interaction.Select(id);interaction.Arrived(now);gatheringReposition=false;s.Reason="绕行已到位，准备采集";return;}
-   while(localIndex<localRoute.Length&&FlatDistance(from,localRoute[localIndex])<.10f)localIndex++;
-   if(localIndex>=localRoute.Length){if(!NpcStandClear(from))RetryLocal(s,now,"npc_arrival_occupied",from);else move.StopMove();return;}
+   if(detected||(localIndex>=localRoute.Length&&InInteractionRange(walkTarget,from)&&StandClear(from)))
+   {int id=walkTarget.GetInstanceID();StopMove();ResetLocalRecovery();navigation.Reset();interaction.Select(id);interaction.Arrived(now);gatheringReposition=false;s.Reason="绕行已到位，准备采集";return;}
+   while(localIndex<localRoute.Length&&FlatDistance(from,localRoute[localIndex])<.10f&&(localIndex<localRoute.Length-1||InInteractionRange(walkTarget,from)))localIndex++;
+   if(localIndex>=localRoute.Length){if(!NpcStandClear(from))RetryLocal(s,now,"npc_arrival_occupied",from);else if(!InInteractionRange(walkTarget,from))RetryLocal(s,now,"local_arrival_outside_range",from);else move.StopMove();return;}
    // Follow a visible corridor, not every grid corner. Recheck against live colliders before steering.
    for(int j=Math.Min(localRoute.Length-1,localIndex+4);j>localIndex;j--)if(FlatDistance(from,localRoute[j])<=1.4f&&LocalEdge(Point(from),Point(localRoute[j]))){localIndex=j;break;}
    var dest=localRoute[localIndex];var delta=dest-from;delta.y=0;
@@ -127,6 +127,10 @@ namespace BD2Territory.Runtime
    if(localBest-remaining>.12){localBest=remaining;localProgressAt=now;}
    if(now-localProgressAt>TimeSpan.FromSeconds(2).Ticks){if(TryEscape(s,now,c,blockingCollider))return;RetryLocal(s,now,"local_motion_stalled",from+delta.normalized*.35f);return;}
    if(!LocalEdge(Point(from),Point(dest))){RetryLocal(s,now,"local_terrain_changed",dest);return;}
+   // Mounting changes speed, not the movement controller. A* keeps steering via CharController.
+   UpdateVehicle(now,c,remaining);
+   if(vehiclePending){move.StopMove();localProgressAt=now;return;}
+   if(player.IsGetOnVehicle())s.Reason="使用载具沿实体通路行进";
    B.InvokeOn("Player.Face",player,delta.normalized*Mathf.Clamp(delta.magnitude/.65f,.1f,1f));B.InvokeOn("Player.StartMove",player);lastInput=now;
   }
  }
