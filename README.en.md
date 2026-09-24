@@ -10,7 +10,7 @@ A standalone Fantasia Territory assistant for BrownDust II on Windows. Automate 
 
 ## Download
 
-Current version: **0.3.0-beta.1**. One application includes Simplified Chinese and English. Start with a small planting budget and cooking batch when evaluating this beta.
+Current version: **0.3.1-beta.1**. One application includes Simplified Chinese and English. Start with a small planting budget and cooking batch when evaluating this beta.
 
 | Edition | Runtime | Recommended for |
 | --- | --- | --- |
@@ -38,10 +38,13 @@ To update from the private territory 0.2.0 tool, pause the old tool before conne
 | Recipes | Read current names, ingredients, seeds and unlock status; changes wait for the current planting batch |
 | Default recipe | Energizing Gnocchi, using a 5:3:2 ratio; the displayed name follows the game translation |
 | Automatic cooking | Off by default. Uses existing ingredients for the selected dish. Batch limit: 1–1000, default 100. Other activities continue when ingredients or output capacity are insufficient |
-| Movement | Checks physical obstacles and workers; can use the equipped vehicle and a short recovery dash |
+| Movement | A* grid routing by default; scans terrain, physical obstacles and workers, then uses directional movement. Vehicles and recovery dashes remain available |
+| Use game NavMesh navigation | Optional and off by default. Turning off switches to A* immediately; turning on applies to the next route. The preference is saved |
 | Action interval | 100–60000ms, default 500; still waits for animations, loading and server responses |
 | Planting budget | Resets on each new run. Gathering continues when spent. Only planting uses this budget; cooking consumes existing ingredients |
 | Layouts | Farm, mining and logging templates or JSON import. Preview placement and cost, then explicitly purchase and import |
+
+New installs and upgrades without a saved navigation preference default to NavMesh off. If A* cannot find a route, the target remains queued for retry; NavMesh is never enabled automatically. Both modes still check physical obstacles and workers.
 
 Cooking does not buy ingredients, sell items or switch dishes. Unknown results keep their journal and pause further operations to avoid duplicate consumption. Check inventory and diagnostics; do not delete records to blindly retry.
 
@@ -78,7 +81,7 @@ Requires Windows, PowerShell and .NET 8 SDK. From this repository root:
 .\package.ps1 -Locked
 ```
 
-Packages go to `dist/v0.3.0-beta.1/`. [Development](docs/DEVELOPMENT.md) · [Localization](docs/LOCALIZATION.md) · [Publication style](docs/PUBLICATION_STYLE.md) · [Release notes](docs/RELEASE_NOTES.md)
+Packages go to `dist/v0.3.1-beta.1/`. [Development](docs/DEVELOPMENT.md) · [Localization](docs/LOCALIZATION.md) · [Publication style](docs/PUBLICATION_STYLE.md) · [Release notes](docs/RELEASE_NOTES.md)
 
 ## License
 
