@@ -8,7 +8,7 @@ internal sealed class WindowText
  readonly Window window; readonly Dictionary<TextBlock,string> texts=new();
  internal WindowText(Window window,string root){this.window=window;Language=new(LanguagePreference.Read(root));Apply();}
  internal void Set(FrameworkElement target,string source){if(target is TextBlock block){texts[block]=source;block.Text=Language.Text(source);}else if(target is TextBox box)box.Text=source;}
- internal void Apply(){foreach(var label in UiLabels.All){window.Resources[label.Key]=Language.Text(label.Value);Application.Current.Resources[label.Key]=Language.Text(label.Value);}foreach(var pair in texts)pair.Key.Text=Language.Text(pair.Value);window.Title=Language.Text(window is TerritoryWindow?"BD2 领地":"BD2 领地 · 布局工具")+" · 0.3.0 beta";}
+ internal void Apply(){foreach(var label in UiLabels.All){window.Resources[label.Key]=Language.Text(label.Value);Application.Current.Resources[label.Key]=Language.Text(label.Value);}foreach(var pair in texts)pair.Key.Text=Language.Text(pair.Value);window.Title=Language.Text(window is TerritoryWindow?"BD2 领地":"BD2 领地 · 布局工具")+" · "+typeof(App).Assembly.GetName().Version!.ToString(3)+" beta";}
 }
 public partial class TerritoryWindow
 {

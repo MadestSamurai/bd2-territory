@@ -1,3 +1,51 @@
+# BD2 Territory v0.3.2-beta.1
+
+## 简体中文
+
+### 更新内容
+
+- 砍树落点参考真实树干碰撞体，缩小与树干的距离，减少在探测圈边缘空挥。
+- 修复重新走位被误判为“已经到达”的问题。空挥后的新路线必须实际走到位。
+- 一次完整空挥后改换站位，并暂存失败站位；收获旁边资源不会掩盖所选目标未命中。
+- 保持 A* 为默认，NavMesh 默认关闭；保留动作及服务器结算等待。
+
+### 下载
+
+| 版本 | 运行环境 | 建议 |
+| --- | --- | --- |
+| Portable | 自带 .NET | 大多数用户 |
+| Lite | .NET Desktop Runtime 8 x64 | 已安装桌面运行库 |
+
+两版功能相同，内置中英切换。EXE 可独立运行；ZIP 包含双语说明和许可证，下载校验见 `SHA256SUMS.txt`。
+
+### 升级
+
+暂停并关闭旧工具，打开新版，点击「连接／更新组件」。等待连接完成后重新开始，原配方及预算设置保留。
+
+## English
+
+### Changes
+
+- Logging approaches the actual trunk collider instead of stopping at the edge of its detection circle.
+- Fixes recovery routes reporting arrival before the character has moved to the new stand.
+- Repositions after one fully settled missed action and temporarily remembers failed stands. Harvesting a nearby resource no longer hides a miss against the selected target.
+- A* remains the default and NavMesh stays off by default. Tool animations and server settlement still finish before recovery begins.
+
+### Downloads
+
+| Edition | Runtime requirement | Recommended for |
+| --- | --- | --- |
+| Portable | Includes .NET | Most users |
+| Lite | .NET Desktop Runtime 8 x64 | Desktop runtime already installed |
+
+Both editions include Chinese and English. The EXE runs independently; ZIP packages include bilingual documentation and licenses. Verify downloads with `SHA256SUMS.txt`.
+
+### Upgrade
+
+Pause and close the old tool, open the new version and select **Connect / update component**. Start automation after connecting. Existing recipe and budget preferences are kept.
+
+---
+
 # BD2 Territory v0.3.1-beta.1
 
 ## 简体中文

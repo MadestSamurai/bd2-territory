@@ -16,7 +16,7 @@ public partial class TerritoryWindow : Window
  public TerritoryWindow(string? dataRoot=null)
  {
   root=dataRoot??TerritoryIdentity.DataRoot;link=new(root);InitializeComponent();InitializeLanguage();
-  Set(VersionText,"0.3.1 beta");
+  Set(VersionText,"0.3.2 beta");
   var settings=TerritoryJson.Read<TerritorySettings>(Path.Combine(root,"settings.json"))??new();
   if(!settings.ValidSettings())settings=new();
   selectedRecipe=settings.RecipeId;RecipeBox.ItemsSource=new[]{new RecipeOption{Id=selectedRecipe,Name=selectedRecipe==3?"活力面疙瘩":"配方 "+selectedRecipe,Available=true}};RecipeBox.SelectedValue=selectedRecipe;

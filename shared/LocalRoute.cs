@@ -11,10 +11,10 @@ namespace BD2Territory
  }
  public static class LocalStandPoints
  {
-  public static IEnumerable<RoutePoint> Create(RoutePoint center,RoutePoint from,double reach)
+  public static IEnumerable<RoutePoint> Create(RoutePoint center,RoutePoint from,double reach,bool nearSurface=false)
   {
    if(reach<=0||reach>10)yield break;double angle=Math.Atan2(from.Z-center.Z,from.X-center.X);
-   foreach(double fraction in new[]{.96,.9,.8,.65})for(int i=0;i<32;i++)
+   foreach(double fraction in nearSurface?new[]{.96,.9,.8,.65,.5,.35}:new[]{.96,.9,.8,.65})for(int i=0;i<32;i++)
    {double a=angle+i*Math.PI/16;yield return new RoutePoint(center.X+Math.Cos(a)*reach*fraction,from.Y,center.Z+Math.Sin(a)*reach*fraction);}
   }
  }

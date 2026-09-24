@@ -2,6 +2,7 @@ using BD2Territory;
 using System.Text.Json;
 CookingCases.Run();
 BD2Territory.Runtime.RoutingAdapterTests.Run();
+BD2Territory.Runtime.GatheringPositionTests.Run();
 int checks=0;
 void Check(bool v,string why){checks++;if(!v)throw new Exception(why);}
 void Reject(Action a,string why){bool rejected=false;try{a();}catch(InvalidOperationException){rejected=true;}Check(rejected,why);}
@@ -98,8 +99,9 @@ Check(!gather.Observe(At(2500),true,false,false,100,10),"原生下一段动作�
 Check(!gather.Observe(At(3000),false,false,true,100,10),"动画结束仍须等待服务器");
 Check(!gather.Observe(At(6000),false,false,false,100,11)&&gather.Progressed,"目标血量没变但邻格收获回执也算有效采集");
 Check(!gather.Observe(At(6500),false,false,false,100,11),"回执后留出连续动作收尾间隔");
-Check(gather.Observe(At(6600),false,false,false,100,11)&&!gather.Pending&&gather.Misses==0,"收尾完成才交还控制");
-Check(gather.Observe(At(6700),false,false,false,100,11)&&gather.Misses==0,"重复刷新不会重复结算");
+Check(gather.Observe(At(6600),false,false,false,100,11)&&!gather.Pending&&gather.Misses==1&&!gather.TargetProgressed,"邻格回执不能掩盖所选目标未命中，收尾后走位");
+Check(gather.Observe(At(6700),false,false,false,100,11)&&gather.Misses==1,"重复刷新不会重复结算");
+gather.Reset();gather.Select(123);
 // Real empty swings, not high frequency status updates, trigger bounded recovery.
 for(int attempt=0;attempt<2;attempt++)
 {
@@ -107,8 +109,9 @@ for(int attempt=0;attempt<2;attempt++)
  gather.Observe(At(t+100),true,false,false,100,11);
  gather.Observe(At(t+1000),false,false,false,100,11);
  Check(gather.Observe(At(t+1600),false,false,false,100,11)&&gather.Misses==attempt+1,"完整空挥只记一次");
+ Check(gather.NeedsReposition,"一次完整空挥后就换站位，不能等原地连砍");
 }
-Check(gather.NeedsReposition,"两次完整无进展动作后才走位");
+Check(gather.NeedsReposition,"完整无进展动作需要走位");
 gather.Reposition();Check(gather.Repositions==1&&!gather.NeedsReposition,"走位后保留尝试次数并清除空挥");
 gather.Issued(At(11000),100,11);gather.Observe(At(11100),true,false,false,80,11);
 Check(gather.Progressed&&gather.Repositions==0,"实际命中清除恢复次数");

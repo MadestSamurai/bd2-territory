@@ -61,7 +61,7 @@ namespace BD2Territory.Runtime
     var field=B.Read("Field.Instance",null);player=field==null?null:B.Read("Field.Player",field) as PlayerController;move=player==null?null:B.Read("Player.Move",player) as PlayerMoveController;
     var ctx=field==null?null:B.Read("Field.Context",field);tool=ctx==null?null:ctx.GetType().GetMethods().Single(m=>m.Name=="GetTickBase"&&m.IsGenericMethod&&m.GetParameters().Length==0).MakeGenericMethod(typeof(LifePlayerToolEquipmentController)).Invoke(ctx,null) as LifePlayerToolEquipmentController;
     s.Ready=player!=null&&move!=null&&tool!=null&&surfaces.Any(v=>v is AvatarLifeGameFieldDefaultUI||v is AvatarLifeHousingEditUI||v is AvatarLifeLevelUpPopupUI||v is AvatarLifeNewItemPopupUI);
-    if(farmScene!=s.Scene){farmScene=s.Scene;emptyProgress.Clear();network.ClearEvidence();failures.Clear();skip.Clear();ResetLocalRecovery();}
+    if(farmScene!=s.Scene){farmScene=s.Scene;gatheringStands.Clear();emptyProgress.Clear();network.ClearEvidence();failures.Clear();skip.Clear();ResetLocalRecovery();}
     RefreshWorld(now);SettleReceipt();SettleCooking();s.Cooked=cooking==null?0:cooking.ConfirmedTotal;s.CookingState=cooking==null?"":cooking.State;
     var c=control??new TerritoryControl();s.OwnerId=c.OwnerId;
     s.Fields=farms.Length;s.EmptyFields=farms.Count(Empty);s.FarmState=FarmDiagnostic();s.Trees=nodes.Count(n=>Harvestable(n)&&Kind(n)==1);s.Ores=nodes.Count(n=>Harvestable(n)&&Kind(n)==2);s.Mature=nodes.Count(n=>Harvestable(n)&&Kind(n)==3);s.RetryTargets=nodes.Count(n=>Harvestable(n)&&failures.TryGetValue(ResourceKey(n),out var retry)&&retry.Failures>0);
@@ -283,14 +283,17 @@ namespace BD2Territory.Runtime
   private bool AwaitGathering(TerritorySnapshot s,long now,bool requestPending)
   {
    bool busy=(bool)B.Read("Tool.Busy",tool),loading=ToolLoading(),wasPending=gathering.Pending;
-   double hp=targetNode==null?double.NaN:Convert.ToDouble(B.Read("Gather.Hp",targetNode));
+   double hp=targetNode==null?(wasPending?0:double.NaN):Convert.ToDouble(B.Read("Gather.Hp",targetNode));
    bool ready=gathering.Observe(now,busy,loading,requestPending,hp,network.GatherReplies);
    if(wasPending&&!gathering.Pending)
    {
     // A naturally completed action releases ownership without sending CancelAutoUseTool.
     ownsTool=false;protectResources=false;
-    if(gathering.Progressed&&activeTargetKey.Length>0)failures.Remove(activeTargetKey);
-    LocalStorage.Log("采集动作结束 target="+gathering.Target+" progress="+gathering.Progressed+" misses="+gathering.Misses+" hp="+hp+" replies="+network.GatherReplies);
+    if(gathering.TargetProgressed)
+    {gatheringStands.Succeeded(gathering.Target);if(activeTargetKey.Length>0)failures.Remove(activeTargetKey);}
+    else if(targetNode!=null&&Harvestable(targetNode))
+    {gatheringStands.Record(gathering.Target,Point(gatheringStand),now);LocalStorage.Log("记录空挥站位 target="+gathering.Target+" stand="+gatheringStand.ToString("F3"));}
+    LocalStorage.Log("采集动作结束 target="+gathering.Target+" progress="+gathering.Progressed+" targetProgress="+gathering.TargetProgressed+" misses="+gathering.Misses+" hp="+hp+" replies="+network.GatherReplies);
    }
    if(ready)return false;
    if(gathering.Stalled(now))throw new InvalidOperationException("工具动作超过 45 秒无命中或收获回执，已暂停；请检查角色和网络状态");
@@ -318,10 +321,16 @@ namespace BD2Territory.Runtime
    int kind=Kind(targetNode);s.Target=(kind==1?"砍树":kind==2?"采矿":"收获作物")+" · "+targetNode.GetInstanceID();
    interaction.Select(targetNode.GetInstanceID());
    if(gathering.Target!=targetNode.GetInstanceID()){gathering.Select(targetNode.GetInstanceID());gatheringReposition=false;activeTargetKey=ResourceKey(targetNode);}
+   if(!gatheringReposition&&gathering.NeedsReposition)
+   {
+    if(gathering.Repositions>=2){SkipWalkTarget(targetNode,s,now,"gather_no_hit_after_reposition");return;}
+    StopMotion();gathering.Reposition();gatheringReposition=true;
+    LocalStorage.Log("采集空挥已结算，改换站位 target="+targetNode.GetInstanceID()+" attempt="+gathering.Repositions+" from="+player.transform.position.ToString("F3"));
+   }
    if(gatheringReposition)
    {Approach(targetNode,targetNode.transform.position,s,now,.7f,gathering.Repositions);return;}
    if(!NpcStandClear(player.transform.position)){gatheringReposition=true;Approach(targetNode,targetNode.transform.position,s,now,.7f);return;}
-   bool detected=Detected(kind).Contains(targetNode);
+   bool detected=Detected(kind).Contains(targetNode)&&CanGatherAt(targetNode,player.transform.position);
    var decision=interaction.Decide(now,detected,Harvestable(targetNode));
    if(decision==InteractionDecision.WaitForDetection){s.Reason="已到位，等待游戏更新采集范围";return;}
    if(decision!=InteractionDecision.UseTool)
@@ -330,20 +339,12 @@ namespace BD2Territory.Runtime
     Approach(targetNode,targetNode.transform.position,s,now,.7f);return;
    }
    StopMove();if(!FootReady(s))return;double hp=Convert.ToDouble(B.Read("Gather.Hp",targetNode));
-   if(gathering.NeedsReposition&&gathering.Repositions>=2)
-   {LocalStorage.Log("采集无进展 target="+targetNode.GetInstanceID()+" hp="+hp);SkipWalkTarget(targetNode,s,now,"gather_no_hit_after_reposition");return;}
-   if(gathering.NeedsReposition)
-   {
-    StopMotion();gathering.Reposition();gatheringReposition=true;
-    LocalStorage.Log("采集连续两次空挥，重新靠近 target="+targetNode.GetInstanceID()+" attempt="+gathering.Repositions+" hp="+hp);
-    s.Reason="空挥后重新靠近目标";return;
-   }
    var direction=targetNode.transform.position-player.transform.position;direction.y=0;
    if(direction.sqrMagnitude<=.0001f){StopMotion();gathering.Reposition();gatheringReposition=true;s.Reason="与采集点重叠，重新走位";return;}
    navigation.Reset();triedDestinations.Clear();FaceGatheringTarget();
    int group=B.EnumValue("ToolKind",kind==1?"LoggingTool":kind==2?"MiningTool":"FarmingTool");var owned=(LifeToolDBInfo)B.Invoke("Inventory.Tool",group);int id=owned?.Id??1;
    var ev=Activator.CreateInstance(TerritoryIl.InstanceCheckType((MethodInfo)B.Api("Tool.Event")),new object[]{group,id});
-   gathering.Issued(now,hp,network.GatherReplies);protectResources=true;B.InvokeOn("Tool.Event",tool,ev);ownsTool=true;
+   gatheringStand=player.transform.position;gathering.Issued(now,hp,network.GatherReplies);protectResources=true;B.InvokeOn("Tool.Event",tool,ev);ownsTool=true;
    gathering.Observe(now,(bool)B.Read("Tool.Busy",tool),ToolLoading(),network.Waiting,hp,network.GatherReplies);
    lastInput=now;s.Reason="已面向目标，使用工具采集";
   }
@@ -376,7 +377,7 @@ namespace BD2Territory.Runtime
    {
     NavMeshHit hit;var path=new NavMeshPath();
     if(!NavMesh.SamplePosition(point,out hit,.3f,filter)||FlatDistance(point,hit.position)>.08f)continue;
-    var standing=hit.position+Vector3.up*RootLift;if(!InInteractionRange(target,standing)||!StandClear(standing))continue;
+    var standing=hit.position+Vector3.up*RootLift;if(!CanGatherAt(target,standing)||!StandClear(standing))continue;
     if(!NavMesh.CalculatePath(from,hit.position,filter,path)||path.status!=NavMeshPathStatus.PathComplete)continue;
     double length=PathLength(path),direct=Vector3.Distance(from,hit.position);
     if(length>Math.Max(12,direct*4+4)||length>=best)continue;best=length;chosen=hit.position;
@@ -390,7 +391,7 @@ namespace BD2Territory.Runtime
   {
    int id=target==null?navigation.Target:target.GetInstanceID();
    LocalStorage.Log("目标保留待重试 target="+id+" reason="+reason+" attempts="+navigation.Attempts+" remaining="+navigation.BestRemaining.ToString("F2"));
-   CaptureFailure(reason);StopMove();ResetLocalRecovery();long until=now+TimeSpan.FromSeconds(15).Ticks;
+   CaptureFailure(reason);StopMove();ResetLocalRecovery();if(gathering.Target==id&&!gathering.Pending)gathering.Reset();long until=now+TimeSpan.FromSeconds(15).Ticks;
    if(target is LifeGatheringObject resource){var key=ResourceKey(resource);if(!failures.TryGetValue(key,out var memory))failures[key]=memory=new TargetFailureMemory();memory.Failed(now);until=memory.Until;}
    skip[id]=until;
    if(target is LifeFarmFieldObject)targetFarm=null;else targetNode=null;
@@ -410,7 +411,7 @@ namespace BD2Territory.Runtime
    var from=player.transform.position;var agent=NavAgent();
    if(!NpcStandClear(walkDestination+Vector3.up*RootLift)){if(!BeginLocalRoute(walkTarget,s,now,"npc_destination_occupied"))SkipWalkTarget(walkTarget,s,now,"npc_destination_occupied");return;}
    bool arrived=FlatDistance(from,walkDestination)<=.12f&&Math.Abs(from.y-walkDestination.y)<=.45f&&NpcStandClear(from);
-   if(!bypassing&&walkTarget is LifeGatheringObject nearby&&Detected(Kind(nearby)).Contains(nearby)&&InInteractionRange(nearby,from)&&StandClear(from))arrived=true;
+   if(!bypassing)arrived=GatherStandReached(walkTarget,from,arrived,walkTarget is LifeGatheringObject nearby&&Detected(Kind(nearby)).Contains(nearby));
    if(arrived&&bypassing){walkDestination=finalDestination;bypassing=false;B.InvokeOn("Player.StartMove",player);if(!(bool)B.InvokeOn("Player.SetMoveNav",move,walkDestination,null,true)){SkipWalkTarget(walkTarget,s,now,"bypass_resume_failed");return;}arrived=false;}
    var path=new NavMeshPath();bool valid=agent!=null&&agent.isActiveAndEnabled&&agent.isOnNavMesh&&NavMesh.CalculatePath(from,walkDestination,NavFilter(agent),path)&&path.status==NavMeshPathStatus.PathComplete;
    double remaining=valid?PathLength(path):double.PositiveInfinity;

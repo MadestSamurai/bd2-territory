@@ -10,7 +10,7 @@
 
 ## 下载
 
-当前版本：**0.3.1-beta.1**。一个程序内置简体中文与 English，可在右上角切换。Beta 版建议先用小预算、少量料理确认效果。
+当前版本：**0.3.2-beta.1**。一个程序内置简体中文与 English，可在右上角切换。Beta 版建议先用小预算、少量料理确认效果。
 
 | 版本 | 运行环境 | 建议 |
 | --- | --- | --- |
@@ -81,7 +81,7 @@
 .\package.ps1 -Locked
 ```
 
-成品输出 `dist/v0.3.1-beta.1/`。[开发说明](docs/DEVELOPMENT.md) · [本地化](docs/LOCALIZATION.md) · [发布格式](docs/PUBLICATION_STYLE.md) · [版本说明](docs/RELEASE_NOTES.md)
+成品输出 `dist/v0.3.2-beta.1/`。[开发说明](docs/DEVELOPMENT.md) · [本地化](docs/LOCALIZATION.md) · [发布格式](docs/PUBLICATION_STYLE.md) · [版本说明](docs/RELEASE_NOTES.md)
 
 ## 许可
 

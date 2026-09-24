@@ -20,11 +20,12 @@ namespace UnityEngine
  }
  public class Component
  {
-  public int Id;public bool Active=true;public Transform transform=new();public CharacterController Body;
+  public int Id;public bool Active=true;public Transform transform=new();public CharacterController Body;public Collider HitBox;
+  public T GetComponent<T>() where T:class=>(HitBox as T)??(Body as T);
   public int GetInstanceID()=>Id;
   public T GetComponentInChildren<T>(bool includeInactive) where T:class=>Body as T;
  }
- public class Collider:Component {public bool enabled=true;}
+ public class Collider:Component {public bool enabled=true;public Func<Vector3,Vector3> Closest=p=>p;public Vector3 ClosestPoint(Vector3 p)=>Closest(p);}
  public class CharacterController:Collider {public float radius=.24f,height=.77f;public Vector3 center=new(0,.4f,0);}
 }
 namespace BD2Territory.Runtime

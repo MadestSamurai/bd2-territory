@@ -59,10 +59,10 @@ namespace BD2Territory.Runtime
    float reach=sector==null?Math.Max(.7f,radius):Convert.ToSingle(B.Read("Detector.Distance",sector));
    // Sample inside the interaction sector; actual capsule/shape tests decide clearance.
    var from=player.transform.position;
-   foreach(var candidate in LocalStandPoints.Create(Point(center),Point(from),reach))
+   foreach(var candidate in LocalStandPoints.Create(Point(center),Point(from),reach,target is LifeGatheringObject resource&&Kind(resource)==1))
    {
     Vector3 p;if(!GroundPoint(Vector(candidate),out p))continue;
-    if(!InInteractionRange(target,p))continue;
+    if(!CanGatherAt(target,p))continue;
     if(retry&&(triedDestinations.Any(t=>FlatDistance(t,p)<.12f)||(gatheringReposition&&FlatDistance(from,p)<.25f)))continue;
     yield return p;
    }
@@ -111,11 +111,11 @@ namespace BD2Territory.Runtime
    }
    var from=player.transform.position;
    if(!NpcStandClear(finalDestination)){RetryLocal(s,now,"npc_destination_occupied",finalDestination);return;}
-   bool detected=walkTarget is LifeGatheringObject resource&&Detected(Kind(resource)).Contains(resource)&&InInteractionRange(walkTarget,from)&&StandClear(from);
-   if(detected||(localIndex>=localRoute.Length&&InInteractionRange(walkTarget,from)&&StandClear(from)))
-   {int id=walkTarget.GetInstanceID();StopMove();ResetLocalRecovery();navigation.Reset();interaction.Select(id);interaction.Arrived(now);gatheringReposition=false;s.Reason="绕行已到位，准备采集";return;}
-   while(localIndex<localRoute.Length&&FlatDistance(from,localRoute[localIndex])<.10f&&(localIndex<localRoute.Length-1||InInteractionRange(walkTarget,from)))localIndex++;
-   if(localIndex>=localRoute.Length){if(!NpcStandClear(from))RetryLocal(s,now,"npc_arrival_occupied",from);else if(!InInteractionRange(walkTarget,from))RetryLocal(s,now,"local_arrival_outside_range",from);else move.StopMove();return;}
+   bool detected=walkTarget is LifeGatheringObject resource&&Detected(Kind(resource)).Contains(resource);
+   if(GatherStandReached(walkTarget,from,localIndex>=localRoute.Length,detected))
+   {int id=walkTarget.GetInstanceID();LocalStorage.Log("实体站位到达 target="+id+" recovery="+gatheringReposition+" actual="+from.ToString("F3")+" goal="+finalDestination.ToString("F3"));StopMove();ResetLocalRecovery();navigation.Reset();interaction.Select(id);interaction.Arrived(now);gatheringReposition=false;s.Reason="绕行已到位，准备采集";return;}
+   while(localIndex<localRoute.Length&&FlatDistance(from,localRoute[localIndex])<.10f&&(localIndex<localRoute.Length-1||CanGatherAt(walkTarget,from)))localIndex++;
+   if(localIndex>=localRoute.Length){if(!NpcStandClear(from))RetryLocal(s,now,"npc_arrival_occupied",from);else if(!CanGatherAt(walkTarget,from))RetryLocal(s,now,"local_arrival_outside_range",from);else move.StopMove();return;}
    // Follow a visible corridor, not every grid corner. Recheck against live colliders before steering.
    for(int j=Math.Min(localRoute.Length-1,localIndex+4);j>localIndex;j--)if(FlatDistance(from,localRoute[j])<=1.4f&&LocalEdge(Point(from),Point(localRoute[j]))){localIndex=j;break;}
    var dest=localRoute[localIndex];var delta=dest-from;delta.y=0;

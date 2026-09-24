@@ -10,7 +10,7 @@ A standalone Fantasia Territory assistant for BrownDust II on Windows. Automate 
 
 ## Download
 
-Current version: **0.3.1-beta.1**. One application includes Simplified Chinese and English. Start with a small planting budget and cooking batch when evaluating this beta.
+Current version: **0.3.2-beta.1**. One application includes Simplified Chinese and English. Start with a small planting budget and cooking batch when evaluating this beta.
 
 | Edition | Runtime | Recommended for |
 | --- | --- | --- |
@@ -81,7 +81,7 @@ Requires Windows, PowerShell and .NET 8 SDK. From this repository root:
 .\package.ps1 -Locked
 ```
 
-Packages go to `dist/v0.3.1-beta.1/`. [Development](docs/DEVELOPMENT.md) · [Localization](docs/LOCALIZATION.md) · [Publication style](docs/PUBLICATION_STYLE.md) · [Release notes](docs/RELEASE_NOTES.md)
+Packages go to `dist/v0.3.2-beta.1/`. [Development](docs/DEVELOPMENT.md) · [Localization](docs/LOCALIZATION.md) · [Publication style](docs/PUBLICATION_STYLE.md) · [Release notes](docs/RELEASE_NOTES.md)
 
 ## License
 
