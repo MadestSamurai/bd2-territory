@@ -21,6 +21,7 @@ public static class HookCompiler
         if(resolved.Report.Status!="compatible")throw new CompatibilityException(resolved.Report);
         ValidateEnums(resolved);
         ValidateRuntimeEntryPoints(resolved);
+        ValidateSurfaceInterfaces(index);
         var assembly=typeof(HookCompiler).Assembly;
         var sources=assembly.GetManifestResourceNames().Where(n=>n.StartsWith("Hook.",StringComparison.Ordinal)).OrderBy(n=>n,StringComparer.Ordinal).Select(n=>CSharpSyntaxTree.ParseText(Encoding.UTF8.GetString(Resource(n)),path:n)).ToList();
         sources.Add(CSharpSyntaxTree.ParseText(GenerateSource(resolved),path:"TerritoryClient.g.cs"));
@@ -29,7 +30,7 @@ public static class HookCompiler
         foreach(var file in Directory.EnumerateFiles(managed,"*.dll").OrderBy(x=>x,StringComparer.Ordinal))
         {try{refs.Add(MetadataReference.CreateFromFile(file));}catch(BadImageFormatException){}}
         refs.Add(MetadataReference.CreateFromImage(Resource("BD2Territory.Harmony.dll")));
-        var compilation=CSharpCompilation.Create("BD2Territory.Runtime20."+ToolFingerprint.Substring(0,16),sources,refs,new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,optimizationLevel:OptimizationLevel.Release,platform:Platform.X64,deterministic:true));
+        var compilation=CSharpCompilation.Create("BD2Territory.Runtime21."+ToolFingerprint.Substring(0,16),sources,refs,new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,optimizationLevel:OptimizationLevel.Release,platform:Platform.X64,deterministic:true));
         using var stream=new MemoryStream();
         var emit=compilation.Emit(stream,manifestResources:new[]{new ResourceDescription("BD2Territory.Harmony.dll",()=>new MemoryStream(Resource("BD2Territory.Harmony.dll")),true)});
         if(!emit.Success)throw new InvalidOperationException("当前客户端接口无法编译，尚未注入。\n"+string.Join("\n",emit.Diagnostics.Where(d=>d.Severity==DiagnosticSeverity.Error).Take(30)));
@@ -46,6 +47,16 @@ public static class HookCompiler
         }
     }
 
+    private static void ValidateSurfaceInterfaces(MetadataIndex index)
+    {
+        var chunk=index.Find("FieldEvent.Life.Chunk.GroundChunk");
+        var cell=chunk.Methods.Single(m=>m.Name=="GetCellType"&&m.Parameters.Count==2).ReturnType.Resolve();
+        if(!cell.IsEnum||!new[]{"None","Ground","Water"}.All(n=>cell.Fields.Any(f=>f.Name==n&&f.HasConstant)))
+            throw new InvalidOperationException("Cannot identify territory land/water cells; nothing was injected.");
+        var gate=index.Find("FieldEvent.Life.Chunk.LifePlaceableObject_ColliderGate");
+        if(gate.Fields.Count(f=>!f.IsStatic&&f.FieldType.FullName=="UnityEngine.BoxCollider")!=1)
+            throw new InvalidOperationException("Cannot identify the native bridge crossing gate; nothing was injected.");
+    }
     private static FieldDefinition NormalStepField(ResolvedBindings r)
     {
         var type=r.Types["PlayerMoveController"];

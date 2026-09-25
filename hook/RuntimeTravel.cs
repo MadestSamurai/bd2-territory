@@ -57,7 +57,7 @@ namespace BD2Territory.Runtime
     var direction=Quaternion.Euler(0,degrees,0)*toward.normalized;
     // Verify an escape corridor longer than the intended 1.2 m burst, plus a walkable landing.
     var p=from+direction*2.5f;NavMeshHit hit;
-    double cost;
+    double cost;if(!SurfaceSegmentAllowed(from,p))continue;
     if(localMoving||!c.UseNavMesh)
     {
      Vector3 end,landing;
@@ -95,7 +95,7 @@ namespace BD2Territory.Runtime
   {
    s.Reason="短距冲刺脱困";var from=player.transform.position;double distance=Vector3.Distance(from,escapeStart);
    bool active=dashManager!=null&&(bool)B.InvokeOn("Dash.Active",dashManager);
-   if(!travel.FinishDash(now,distance,active,c.DashRecovery)&&Obstacle(from,from+escapeDirection*.8f)==null)return;
+   if(!travel.FinishDash(now,distance,active,c.DashRecovery)&&SurfaceSegmentAllowed(from,from+escapeDirection*.8f)&&Obstacle(from,from+escapeDirection*.8f)==null)return;
    StopEscape();LocalStorage.Log("冲刺结束，按实际位置重算 target="+navigation.Target+" moved="+distance.ToString("F2")+" at="+from);
    ResumeRouteAfterDash(s,now,c);
   }

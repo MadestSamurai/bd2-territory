@@ -57,10 +57,12 @@ namespace BD2Territory.Runtime
    {
     if(now-lastScan>=TimeSpan.FromMilliseconds(popupProgress.Pending?100:1000).Ticks)
     {
+     terrainGates=UnityEngine.Object.FindObjectsOfType<FieldEvent.Life.Chunk.LifePlaceableObject_ColliderGate>().Where(B.Active).ToArray();
      lastScan=now;surfaces=UnityEngine.Object.FindObjectsOfType<UIBase>().Where(B.Active).ToArray();farms=UnityEngine.Object.FindObjectsOfType<LifeFarmFieldObject>().Where(B.Active).ToArray();nodes=UnityEngine.Object.FindObjectsOfType<LifeGatheringObject>().Where(B.Active).ToArray();
     }
     var field=B.Read("Field.Instance",null);player=field==null?null:B.Read("Field.Player",field) as PlayerController;move=player==null?null:B.Read("Player.Move",player) as PlayerMoveController;
     var ctx=field==null?null:B.Read("Field.Context",field);tool=ctx==null?null:ctx.GetType().GetMethods().Single(m=>m.Name=="GetTickBase"&&m.IsGenericMethod&&m.GetParameters().Length==0).MakeGenericMethod(typeof(LifePlayerToolEquipmentController)).Invoke(ctx,null) as LifePlayerToolEquipmentController;
+    terrainController=ctx==null?null:ctx.GetType().GetMethods().Single(m=>m.Name=="GetTickBase"&&m.IsGenericMethod&&m.GetParameters().Length==0).MakeGenericMethod(typeof(FieldEvent.Life.LifeChunkController)).Invoke(ctx,null) as FieldEvent.Life.LifeChunkController;
     s.Ready=player!=null&&move!=null&&tool!=null&&surfaces.Any(v=>v is AvatarLifeGameFieldDefaultUI||v is AvatarLifeHousingEditUI||v is AvatarLifeLevelUpPopupUI||v is AvatarLifeNewItemPopupUI);
     if(farmScene!=s.Scene){farmScene=s.Scene;gatheringStands.Clear();emptyProgress.Clear();network.ClearEvidence();failures.Clear();skip.Clear();ResetLocalRecovery();}
     RefreshWorld(now);SettleReceipt();SettleCooking();s.Cooked=cooking==null?0:cooking.ConfirmedTotal;s.CookingState=cooking==null?"":cooking.State;
@@ -72,6 +74,7 @@ namespace BD2Territory.Runtime
     if(!c.Valid(now,pid)){Release();s.Reason="自动领地已停止";Publish(s);return;}
     if(owner!=c.OwnerId){Release();owner=c.OwnerId;fault="";network.ClearError();spent=0;account="";}
     if(!s.Ready){Release();s.Reason="请进入可走动的 Fantasia Territory 领地";Publish(s);return;}
+    if(terrainController==null||terrainController.GetChunkManager()==null){StopMove();s.Reason="等待领地水域与桥梁数据";Publish(s);return;}
     if(c.Farming&&c.FixedCrop&&c.FixedSeedId<=0)throw new InvalidOperationException("请选择要固定种植的作物。");
     var user=(UserDBInfo)B.Read("Account.User",null);if(user==null||user.OwnerIndex<=0)throw new InvalidOperationException("尚未读取账号身份");string key=user.OwnerIndex.ToString();
     if(account!=key)
@@ -385,7 +388,7 @@ namespace BD2Territory.Runtime
     NavMeshHit hit;var path=new NavMeshPath();
     if(!NavMesh.SamplePosition(point,out hit,.3f,filter)||FlatDistance(point,hit.position)>.08f)continue;
     var standing=hit.position+Vector3.up*RootLift;if(!CanGatherAt(target,standing)||!StandClear(standing))continue;
-    if(!NavMesh.CalculatePath(from,hit.position,filter,path)||path.status!=NavMeshPathStatus.PathComplete)continue;
+    if(!NavMesh.CalculatePath(from,hit.position,filter,path)||path.status!=NavMeshPathStatus.PathComplete||!SurfacePathAllowed(path.corners))continue;
     double length=PathLength(path),direct=Vector3.Distance(from,hit.position);
     if(length>Math.Max(12,direct*4+4)||length>=best)continue;best=length;chosen=hit.position;
    }
@@ -421,6 +424,8 @@ namespace BD2Territory.Runtime
    if(!bypassing)arrived=GatherStandReached(walkTarget,from,arrived,walkTarget is LifeGatheringObject nearby&&Detected(Kind(nearby)).Contains(nearby));
    if(arrived&&bypassing){walkDestination=finalDestination;bypassing=false;B.InvokeOn("Player.StartMove",player);if(!(bool)B.InvokeOn("Player.SetMoveNav",move,walkDestination,null,true)){SkipWalkTarget(walkTarget,s,now,"bypass_resume_failed");return;}arrived=false;}
    var path=new NavMeshPath();bool valid=agent!=null&&agent.isActiveAndEnabled&&agent.isOnNavMesh&&NavMesh.CalculatePath(from,walkDestination,NavFilter(agent),path)&&path.status==NavMeshPathStatus.PathComplete;
+   if(valid&&!SurfacePathAllowed(path.corners))
+   {move.ClearMove();move.StopMove();agent.ResetPath();if(!BeginLocalRoute(walkTarget,s,now,"water_requires_bridge"))SkipWalkTarget(walkTarget,s,now,"water_requires_bridge");return;}
    double remaining=valid?PathLength(path):double.PositiveInfinity;
    if(bypassing&&agent!=null){var rest=new NavMeshPath();if(NavMesh.CalculatePath(walkDestination,finalDestination,NavFilter(agent),rest)&&rest.status==NavMeshPathStatus.PathComplete)remaining+=PathLength(rest);else valid=false;}
    var corners=valid?path.corners:new Vector3[0];Collider obstacle=null;

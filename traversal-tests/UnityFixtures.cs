@@ -17,8 +17,9 @@ namespace UnityEngine
  }
  public class Transform
  {
-  public Vector3 position,lossyScale=new(1,1,1);public Transform parent;
-  public Vector3 TransformVector(Vector3 p)=>new(p.x*lossyScale.x,p.y*lossyScale.y,p.z*lossyScale.z);
+  public Vector3 eulerAngles;public Vector3 position,lossyScale=new(1,1,1);public Transform parent;
+  public Vector3 TransformVector(Vector3 p){float a=eulerAngles.y*MathF.PI/180,c=MathF.Cos(a),s=MathF.Sin(a);return new(p.x*lossyScale.x*c+p.z*lossyScale.z*s,p.y*lossyScale.y,-p.x*lossyScale.x*s+p.z*lossyScale.z*c);}
+  public Vector3 InverseTransformPoint(Vector3 p){p-=position;float a=eulerAngles.y*MathF.PI/180,c=MathF.Cos(a),s=MathF.Sin(a);return new((p.x*c-p.z*s)/lossyScale.x,p.y/lossyScale.y,(p.x*s+p.z*c)/lossyScale.z);}
   public Vector3 TransformPoint(Vector3 p)=>position+TransformVector(p);
   public bool IsChildOf(Transform t)=>this==t||parent!=null&&parent.IsChildOf(t);
  }
@@ -32,6 +33,7 @@ namespace UnityEngine
  }
  public struct Bounds {public Vector3 min,max;}
  public class Collider:Component {public bool enabled=true,isTrigger;public Bounds bounds;}
+ public class BoxCollider:Collider {public Vector3 center,size;}
  public class CharacterController:Collider {public float stepOffset=.3f,slopeLimit=45,skinWidth=.02f,radius=.24f,height=1;public Vector3 center=new(0,.5f,0);}
  public struct RaycastHit {public Collider collider;public Vector3 point,normal;public float distance;}
  public enum QueryTriggerInteraction {Ignore}
@@ -66,7 +68,7 @@ namespace BD2Territory.Runtime
  internal static class TerritoryBindings
  {
   public static int Inputs;public static string State="Moving";
-  public static object Read(string key,object owner)=>key=="Field.MoveState"?State:key=="Detector.Distance"?(owner as CircleSectorCollider)?.distance??1f:null;
+  public static object Read(string key,object owner)=>key=="Farm.Db"?(owner as FieldEvent.Life.Chunk.LifePlaceableObject)?.Db:key=="Layout.Temporary"?(owner as FieldEvent.Life.Chunk.LifePlaceableObject)?.Temporary??false:key=="Field.MoveState"?State:key=="Detector.Distance"?(owner as CircleSectorCollider)?.distance??1f:null;
   public static object EnumObject(string a,string b)=>b;
   public static object Singleton(Type t)=>null;
   public static object InvokeOn(string key,object owner,params object[] args){if(key=="Player.StartMove")Inputs++;return null;}

@@ -8,6 +8,7 @@ namespace BD2Territory.Runtime
   private PlayerController player=new();private PlayerMoveController move=new();
   internal int Test()
   {
+   terrainController=new FieldEvent.Life.LifeChunkController();
    int checks=0;void Check(bool ok,string label){checks++;if(!ok)throw new Exception(label);}
    var body=new CharacterController{skinWidth=0};body.transform.parent=player.transform;move.SetBody(body);
    Check(ReferenceEquals(Body,body),"uses native controller field, not avatar component");
@@ -96,7 +97,7 @@ namespace BD2Territory.Runtime
    SetLocalRoute(new[]{Point(player.transform.position),new BD2Territory.RoutePoint(-4.182,.115,12.970)},now);
    ContinueLocal(snapshot,now,control);ContinueLocal(snapshot,now+TimeSpan.FromSeconds(3).Ticks,control);
    Check(triedDestinations.Count==1,"blocked ore stand is retired without waiting for an attack miss");
-   Physics.Reset();return checks;
+   Physics.Reset();return checks+TestWater();
   }
  }
 }

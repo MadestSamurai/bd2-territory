@@ -32,7 +32,7 @@ namespace BD2Territory.Runtime
   }
   private bool StaticLocalEdge(RoutePoint a,RoutePoint b,bool cached,bool trial)
   {
-   var from=Vector(a);var to=Vector(b);
+   var from=Vector(a);var to=Vector(b);if(!SurfaceSegmentAllowed(from,to))return false;
    int steps=Math.Max(1,(int)Math.Ceiling(FlatDistance(from,to)/.1f));var previous=from;
    for(int i=1;i<=steps;i++)
    {var wanted=Vector3.Lerp(from,to,(float)i/steps);wanted.y=previous.y;Vector3 ground;

@@ -269,5 +269,6 @@
   "，请求未结算 ": ", pending requests ",
   "批量预览出现未知空田状态，已停止付款": "Batch preview has an unknown field state. Payment stopped.",
   "播种目标已消失": "The planting target is no longer available.",
-  "农田状态暂不可读取：": "Field status is temporarily unavailable: "
+  "农田状态暂不可读取：": "Field status is temporarily unavailable: ",
+  "等待领地水域与桥梁数据": "Waiting for territory water and bridge data"
 }

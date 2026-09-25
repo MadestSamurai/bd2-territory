@@ -10,7 +10,7 @@ A standalone Fantasia Territory assistant for BrownDust II on Windows. Automate 
 
 ## Download
 
-Current version: **0.3.6-beta.1**. One application includes Simplified Chinese and English. Start with a small planting budget and cooking batch when evaluating this beta.
+Current version: **0.3.7-beta.1**. One application includes Simplified Chinese and English. Start with a small planting budget and cooking batch when evaluating this beta.
 
 | Edition | Runtime | Recommended for |
 | --- | --- | --- |
@@ -44,7 +44,7 @@ To update from the private territory 0.2.0 tool, pause the old tool before conne
 | Planting budget | Resets on each new run. Gathering continues when spent. Only planting uses this budget; cooking consumes existing ingredients |
 | Layouts | Farm, mining and logging templates or JSON import. Preview placement and cost, then explicitly purchase and import |
 
-New installs and upgrades without a saved navigation preference default to NavMesh off. If A* cannot find a route, the target remains queued for retry; NavMesh is never enabled automatically. NPCs and workers no longer receive synthetic obstacle footprints. Prediction uses effective game collisions; uncertain routes can be tested by ordinary movement and are temporarily excluded only after 3 seconds without progress.
+New installs and upgrades without a saved navigation preference default to NavMesh off. If A* cannot find a route, the target remains queued for retry; NavMesh is never enabled automatically. Water is impassable except through existing bridges; detours, movement trials and recovery dashes all follow this rule. NPCs and workers no longer receive synthetic obstacle footprints. Prediction uses effective game collisions; uncertain routes can be tested by ordinary movement and are temporarily excluded only after 3 seconds without progress.
 
 Cooking does not buy ingredients, sell items or switch dishes. Unknown results keep their journal and pause further operations to avoid duplicate consumption. Check inventory and diagnostics; do not delete records to blindly retry.
 
@@ -87,7 +87,7 @@ Requires Windows, PowerShell and .NET 8 SDK. From this repository root:
 .\package.ps1 -Locked
 ```
 
-Packages go to `dist/v0.3.6-beta.1/`. [Development](docs/DEVELOPMENT.md) · [Localization](docs/LOCALIZATION.md) · [Publication style](docs/PUBLICATION_STYLE.md) · [Release notes](docs/RELEASE_NOTES.md)
+Packages go to `dist/v0.3.7-beta.1/`. [Development](docs/DEVELOPMENT.md) · [Localization](docs/LOCALIZATION.md) · [Publication style](docs/PUBLICATION_STYLE.md) · [Release notes](docs/RELEASE_NOTES.md)
 
 ## License
 

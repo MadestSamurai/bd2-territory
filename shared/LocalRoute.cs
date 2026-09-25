@@ -37,7 +37,7 @@ namespace BD2Territory
   private readonly RoutePoint origin,center;private readonly RoutePoint[] goals;private readonly double step,radius,minX,maxX,minZ,maxZ;private readonly int limit;private long serial;
   public RouteSearchState State{get;private set;}public RoutePoint[] Path{get;private set;}=new RoutePoint[0];public int Expanded{get;private set;}
   public override string ToString()=>"state="+State+" expanded="+Expanded+" open="+open.Count+" samples="+samples.Count+" goals="+goals.Length+" path="+Path.Length;
-  
+
   public LocalRouteSearch(RoutePoint start,RoutePoint[] destinations,Func<RoutePoint,RoutePoint?> samplePoint,Func<RoutePoint,RoutePoint,bool> edgeClear,double cell=.4,double margin=8,int maxNodes=18000,bool worldAligned=false)
   {
    if(cell<=0||margin<0||maxNodes<1)throw new ArgumentException("Invalid local route bounds");

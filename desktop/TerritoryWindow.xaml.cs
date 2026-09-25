@@ -16,7 +16,7 @@ public partial class TerritoryWindow : Window
  public TerritoryWindow(string? dataRoot=null)
  {
   root=dataRoot??TerritoryIdentity.DataRoot;link=new(root);InitializeComponent();InitializeLanguage();
-  Set(VersionText,"0.3.6 beta");
+  Set(VersionText,"0.3.7 beta");
   var settings=TerritoryJson.Read<TerritorySettings>(Path.Combine(root,"settings.json"))??new();
   if(!settings.ValidSettings())settings=new();
   selectedSeed=settings.FixedSeedId;PlantingModeBox.SelectedIndex=settings.FixedCrop?1:0;

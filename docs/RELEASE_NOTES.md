@@ -1,3 +1,49 @@
+# BD2 Territory v0.3.7-beta.1
+
+## 简体中文
+
+### 更新内容
+
+- 水面一律禁止通行，只通过已放置桥梁的实际通道；桥旁、预览桥和已移除的桥不会放行。
+- A*、可选原生寻路、路线复用、通行试探及冲刺脱困统一检查水域，修复底板碰撞被误当作水面通路的问题。
+- 精确检查经过的水域格子边界，避免斜线走位从两个陆地路点之间切过水面。
+
+### 下载
+
+| 版本 | 运行环境 | 建议 |
+| --- | --- | --- |
+| Portable | 自带 .NET | 大多数用户 |
+| Lite | .NET Desktop Runtime 8 x64 | 已安装桌面运行库 |
+
+两版功能相同，内置中英切换。EXE 可独立运行；ZIP 包含双语说明和许可证，下载校验见 `SHA256SUMS.txt`。
+
+### 升级
+
+暂停并关闭旧工具，打开新版，点击「连接／更新组件」，连接完成后再开始。保留已有设置及种植进度。
+
+## English
+
+### Changes
+
+- Makes water impassable except through an existing bridge's actual crossing corridor. Adjacent water, placement previews and removed bridges stay blocked.
+- Applies the water guard to A*, optional native navigation, cached routes, movement trials and recovery dashes. A broad floor collider no longer counts as a path across water.
+- Checks every crossed terrain-cell boundary, preventing diagonal shortcuts through water between two dry endpoints.
+
+### Downloads
+
+| Build | Runtime | Recommended for |
+| --- | --- | --- |
+| Portable | Includes .NET | Most users |
+| Lite | .NET Desktop Runtime 8 x64 | Users with the desktop runtime installed |
+
+Both builds have the same features and include Chinese/English switching. Each EXE runs on its own; ZIPs include bilingual documentation and licenses. Verify downloads with `SHA256SUMS.txt`.
+
+### Upgrade
+
+Pause and close the old tool, open the new build and select **Connect / update component** before starting. Existing settings and planting progress are retained.
+
+---
+
 # BD2 Territory v0.3.6-beta.1
 
 ## 简体中文

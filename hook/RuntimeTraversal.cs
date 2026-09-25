@@ -63,10 +63,10 @@ namespace BD2Territory.Runtime
   }
   private bool GroundPoint(Vector3 desired,out Vector3 point,bool clearance=true)
   {
-   point=desired;float floor=desired.y-RootLift,height=Math.Max(.55f,StepHeight+.1f);
+   point=desired;bool bridge;if(!SurfaceAllowed(desired,out bridge))return false;float floor=desired.y-RootLift,height=Math.Max(.55f,StepHeight+.1f);
    foreach(var hit in Physics.RaycastAll(new Vector3(desired.x,floor+height,desired.z),Vector3.down,height+.75f,~0,QueryTriggerInteraction.Ignore).OrderBy(h=>h.distance))
    {
-    var collider=hit.collider;if(!MovementCollider(collider)||!TraversalRules.WalkableNormal(hit.normal.y,SlopeLimit)||Math.Abs(hit.point.y-floor)>Math.Max(.45f,StepHeight+.02f))continue;
+    var collider=hit.collider;if(!(MovementCollider(collider)||bridge&&BridgeGround(collider))||!TraversalRules.WalkableNormal(hit.normal.y,SlopeLimit)||Math.Abs(hit.point.y-floor)>Math.Max(.45f,StepHeight+.02f))continue;
     if(collider is CharacterController||collider.GetComponentInParent<LifeGatheringObject>()!=null)continue;
     point=hit.point+Vector3.up*RootLift;return !clearance||StandClear(point);
    }

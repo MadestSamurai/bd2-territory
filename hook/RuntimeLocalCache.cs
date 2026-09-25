@@ -20,7 +20,7 @@ namespace BD2Territory.Runtime
    int world=0;foreach(var key in worldObjects.Keys)world^=key.GetHashCode();
    var body=Body;
    string shape=body==null?"default":body.radius.ToString("R")+"/"+body.height.ToString("R")+"/"+body.center.ToString("F4")+"/"+body.transform.lossyScale.ToString("F4")+"/"+StepHeight.ToString("R")+"/"+body.slopeLimit.ToString("R")+"/"+body.skinWidth.ToString("R");
-   string context=farmScene+"/"+account+"/"+player.GetInstanceID()+"/"+RootLift.ToString("R")+"/"+shape+"/"+world+"/"+worldObjects.Count;
+   string context=farmScene+"/"+account+"/"+player.GetInstanceID()+"/"+RootLift.ToString("R")+"/"+shape+"/"+world+"/"+worldObjects.Count+"/"+SurfaceContext();
    if(context!=localCacheContext){localCacheContext=context;localGround.Clear();localEdges.Clear();localPaths.Clear();warmIndex=0;}
    if(localCacheReplies!=network.GatherReplies)
    {
