@@ -1,3 +1,101 @@
+# BD2 Territory v0.3.4-beta.1
+
+## 简体中文
+
+### 更新内容
+
+- 修复重新开始后沿用旧空田统计，导致已经预览 100 格却提示农田不连通的问题。
+- 区分空田缓存待核对、真实占用、地块身份异常和预览数量不足；等待核对期间不付款，数量异常时尝试重新生成一次游戏预览。
+- 修复部分非默认料理在播种确认时被错误拦截的问题，固定作物种植同步修复。
+- 包含上一候选版的固定作物选择、自适应 A* 网格和导航缓存。
+
+### 下载
+
+| 版本 | 运行环境 | 建议 |
+| --- | --- | --- |
+| Portable | 自带 .NET | 大多数用户 |
+| Lite | .NET Desktop Runtime 8 x64 | 已安装桌面运行库 |
+
+两版功能相同，内置中英切换。EXE 可独立运行；ZIP 包含双语说明和许可证，下载校验见 `SHA256SUMS.txt`。
+
+### 升级
+
+暂停并关闭旧工具，打开新版，点击「连接／更新组件」，连接完成后再开始。保留已有设置及种植进度，无需为此错误重新摆放农田。
+
+## English
+
+### Changes
+
+- Fixes restarting with stale empty-field counts, which could report disconnected fields even when the game preview already contained 100 cells.
+- Separates pending cache checks, occupied fields, invalid field identities and incorrect preview sizes. No payment occurs while checks are pending; an incorrect preview size triggers one native refresh.
+- Fixes planting confirmation incorrectly rejecting some non-default recipes, including fixed-crop planting with those recipes.
+- Includes fixed-crop selection, adaptive A* grids and navigation caching from the previous candidate.
+
+### Downloads
+
+| Edition | Runtime requirement | Recommended for |
+| --- | --- | --- |
+| Portable | Includes .NET | Most users |
+| Lite | .NET Desktop Runtime 8 x64 | Desktop runtime already installed |
+
+Both editions include Chinese and English. The EXE runs independently; ZIP packages include bilingual documentation and licenses. Verify downloads with `SHA256SUMS.txt`.
+
+### Upgrade
+
+Pause and close the old tool, open the new version and select **Connect / update component**. Start after connecting. Existing settings and planting progress are kept; this error does not require rearranging fields.
+
+---
+
+# BD2 Territory v0.3.3-beta.1
+
+## 简体中文
+
+### 更新内容
+
+- 新增「固定种类作物」：连接后选择已解锁作物，每批 100 格持续种植；原有按料理配比种植仍可选择。
+- 切换种植方式或作物先等待当前播种确认，保留预算与进度。固定种植也可独立开启自动料理。
+- 修复采石场等窄出口可能被粗网格漏判的问题；必要时自动细化网格。
+- 缓存地面检测和已找到的通路，空闲时少量预热，减少重复规划等待；执行时仍实时检查工人和障碍。
+- 修复起点与工人占位重叠时无法向外规划，以及到达受阻后原地停等的问题。默认继续使用 A*，NavMesh 保持可选且默认关闭。
+
+### 下载
+
+| 版本 | 运行环境 | 建议 |
+| --- | --- | --- |
+| Portable | 自带 .NET | 大多数用户 |
+| Lite | .NET Desktop Runtime 8 x64 | 已安装桌面运行库 |
+
+两版功能相同，内置中英切换。EXE 可独立运行；ZIP 包含双语说明和许可证，下载校验见 `SHA256SUMS.txt`。
+
+### 升级
+
+暂停并关闭旧工具，打开新版，点击「连接／更新组件」，连接完成后再开始。已有种植设置保留，默认沿用料理配比；需要固定作物时在「种植与料理」切换。
+
+## English
+
+### Changes
+
+- Adds **Plant a fixed crop**: choose an unlocked crop after connecting and keep planting it in batches of 100. Recipe balancing remains available.
+- Planting changes wait for the current batch to be confirmed and preserve spending and progress. Automatic cooking can also be used with fixed planting.
+- Refines the grid when a narrow quarry exit cannot be found on the coarse grid.
+- Caches ground checks and discovered routes, with small idle-time warmups to reduce repeated planning. Workers and obstacles are still checked live while moving.
+- Fixes planning when a worker overlaps the starting position, and waiting at an obstructed arrival point. A* remains the default; NavMesh is optional and off by default.
+
+### Downloads
+
+| Edition | Runtime requirement | Recommended for |
+| --- | --- | --- |
+| Portable | Includes .NET | Most users |
+| Lite | .NET Desktop Runtime 8 x64 | Desktop runtime already installed |
+
+Both editions include Chinese and English. The EXE runs independently; ZIP packages include bilingual documentation and licenses. Verify downloads with `SHA256SUMS.txt`.
+
+### Upgrade
+
+Pause and close the old tool, open the new version and select **Connect / update component**. Start after connecting. Existing planting preferences are kept and default to recipe balancing; choose fixed planting under **Planting and cooking** when needed.
+
+---
+
 # BD2 Territory v0.3.2-beta.1
 
 ## 简体中文

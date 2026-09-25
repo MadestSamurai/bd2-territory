@@ -19,7 +19,7 @@ namespace BD2Territory
   // Persist all 100 distinct field identities and the total charge before the one native confirmation.
   public static RecipeBatchProgress Begin(RecipeBatchProgress state,string[] keys,int unitCost,string owner,long budget,string token)
   {
-   if(state==null||state.Schema!=3||state.RecipeId!=3||string.IsNullOrEmpty(state.Account)||state.SeedId<=0||state.Planted!=0||!string.IsNullOrEmpty(state.PendingToken))throw new InvalidOperationException("播种进度尚未就绪");
+   if(state==null||state.Schema!=3||state.RecipeId<=0||string.IsNullOrEmpty(state.Account)||state.SeedId<=0||state.Planted!=0||!string.IsNullOrEmpty(state.PendingToken))throw new InvalidOperationException("播种进度尚未就绪");
    if(!ValidKeys(keys))throw new InvalidOperationException("一次批量播种必须包含 100 块不同的空田");
    if(string.IsNullOrEmpty(owner)||string.IsNullOrEmpty(token)||unitCost<=0||unitCost>int.MaxValue/RecipeBatchPlanner.BatchSize||budget<0)throw new InvalidOperationException("播种确认缺少身份或费用");
    int cost=unitCost*RecipeBatchPlanner.BatchSize;

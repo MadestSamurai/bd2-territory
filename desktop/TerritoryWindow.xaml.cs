@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Media;
@@ -12,32 +12,41 @@ public partial class TerritoryWindow : Window
  private readonly DispatcherTimer timer;
  private TerritorySnapshot? snapshot;
  private bool initialized,connecting,closing,smoke;
- private DateTime lastDiagnostic;private int selectedRecipe=3;private bool refreshingRecipes;private string recipeCatalogKey="";
+ private DateTime lastDiagnostic;private int selectedRecipe=3,selectedSeed;private string seedCatalogKey="";private bool refreshingRecipes;private string recipeCatalogKey="";
  public TerritoryWindow(string? dataRoot=null)
  {
   root=dataRoot??TerritoryIdentity.DataRoot;link=new(root);InitializeComponent();InitializeLanguage();
-  Set(VersionText,"0.3.2 beta");
+  Set(VersionText,"0.3.4 beta");
   var settings=TerritoryJson.Read<TerritorySettings>(Path.Combine(root,"settings.json"))??new();
   if(!settings.ValidSettings())settings=new();
+  selectedSeed=settings.FixedSeedId;PlantingModeBox.SelectedIndex=settings.FixedCrop?1:0;
+  if(selectedSeed>0){FixedSeedBox.ItemsSource=new[]{new RecipeOption{Id=selectedSeed,Name=ui.Language.Text("作物 ")+selectedSeed,Available=true}};FixedSeedBox.SelectedValue=selectedSeed;}
   selectedRecipe=settings.RecipeId;RecipeBox.ItemsSource=new[]{new RecipeOption{Id=selectedRecipe,Name=selectedRecipe==3?"活力面疙瘩":"配方 "+selectedRecipe,Available=true}};RecipeBox.SelectedValue=selectedRecipe;
   CookingBox.IsChecked=settings.Cooking;CookingBatchBox.Text=settings.CookingBatch.ToString();LoggingBox.IsChecked=settings.Logging;MiningBox.IsChecked=settings.Mining;FarmingBox.IsChecked=settings.Farming;
   NavMeshBox.IsChecked=settings.UseNavMesh;VehicleBox.IsChecked=settings.UseVehicle;DashBox.IsChecked=settings.DashRecovery;
   Set(IntervalBox,settings.IntervalMs.ToString());Set(BudgetBox,settings.PlantingBudget.ToString());Set(DataPathBox,root);
-  link.Configure(settings);initialized=true;timer=new DispatcherTimer{Interval=TimeSpan.FromMilliseconds(500)};timer.Tick+=(_,_)=>{Refresh();};timer.Start();
+  link.Configure(settings);initialized=true;UpdatePlantingControls();timer=new DispatcherTimer{Interval=TimeSpan.FromMilliseconds(500)};timer.Tick+=(_,_)=>{Refresh();};timer.Start();
   Closed+=(_,_)=>{closing=true;timer.Stop();link.Dispose();};
  }
  private TerritorySettings Settings()
  {
   if(!int.TryParse(CookingBatchBox.Text,out int cookingBatch)||!int.TryParse(IntervalBox.Text,out int interval)||!long.TryParse(BudgetBox.Text,out long budget))throw new InvalidOperationException("间隔和预算请输入整数。");
-  var s=new TerritorySettings{Cooking=CookingBox.IsChecked==true,CookingBatch=cookingBatch,RecipeId=selectedRecipe,Logging=LoggingBox.IsChecked==true,Mining=MiningBox.IsChecked==true,Farming=FarmingBox.IsChecked==true,UseNavMesh=NavMeshBox.IsChecked==true,UseVehicle=VehicleBox.IsChecked==true,DashRecovery=DashBox.IsChecked==true,IntervalMs=interval,PlantingBudget=budget};
+  var s=new TerritorySettings{FixedCrop=PlantingModeBox.SelectedIndex==1,FixedSeedId=selectedSeed,Cooking=CookingBox.IsChecked==true,CookingBatch=cookingBatch,RecipeId=selectedRecipe,Logging=LoggingBox.IsChecked==true,Mining=MiningBox.IsChecked==true,Farming=FarmingBox.IsChecked==true,UseNavMesh=NavMeshBox.IsChecked==true,UseVehicle=VehicleBox.IsChecked==true,DashRecovery=DashBox.IsChecked==true,IntervalMs=interval,PlantingBudget=budget};
   if(!s.ValidSettings())throw new InvalidOperationException("间隔范围 100–60000 毫秒，预算范围 0–10000000；料理每批 1–1000 份。");return s;
  }
  private void SettingsChanged(object sender,RoutedEventArgs e)
  {
-  if(!initialized||closing)return;
-  try{link.Configure(Settings());Set(SettingsHint,"设置已保存。预算 0 表示不限；暂停后重新开始会重置本次预算。");SettingsHint.Foreground=(Brush)FindResource("MutedBrush");}
+  if(!initialized||closing)return;UpdatePlantingControls();
+  try{var settings=Settings();if(link.Enabled&&settings.Farming&&settings.FixedCrop&&settings.FixedSeedId<=0)throw new InvalidOperationException("请选择要固定种植的作物。");link.Configure(settings);Set(SettingsHint,"设置已保存。预算 0 表示不限；暂停后重新开始会重置本次预算。");SettingsHint.Foreground=(Brush)FindResource("MutedBrush");}
   catch(Exception ex){Set(SettingsHint,ex.GetBaseException().Message);SettingsHint.Foreground=Brushes.Firebrick;}
  }
+ private void UpdatePlantingControls()
+ {
+  bool fixedCrop=PlantingModeBox.SelectedIndex==1;FixedCropPanel.Visibility=fixedCrop?Visibility.Visible:Visibility.Collapsed;
+  RecipePanel.Visibility=!fixedCrop||CookingBox.IsChecked==true?Visibility.Visible:Visibility.Collapsed;
+ }
+ private void PlantingChanged(object sender,System.Windows.Controls.SelectionChangedEventArgs e)
+ {if(!initialized||refreshingRecipes)return;if(FixedSeedBox.SelectedValue is int seed)selectedSeed=seed;SettingsChanged(sender,e);}
  private void RecipeChanged(object sender,System.Windows.Controls.SelectionChangedEventArgs e)
  {if(!initialized||refreshingRecipes)return;if(RecipeBox.SelectedItem is RecipeOption r){selectedRecipe=r.Id;SettingsChanged(sender,e);Set(RecipeHint,r.Available?r.Ratio+"。每批同种 100 个；正在播种时，本批回执确认后切换。":r.Reason);}}
  private void LayoutClick(object sender,RoutedEventArgs e)
@@ -58,7 +67,8 @@ public partial class TerritoryWindow : Window
  {
   try
   {
-   var settings=Settings();if((settings.Farming||settings.Cooking)&&snapshot?.Recipes?.Length>0&&snapshot.Recipes.FirstOrDefault(r=>r.Id==settings.RecipeId)?.Available!=true)throw new InvalidOperationException("当前配方尚不可自动种植，请选择已解锁配方或取消种植项目。");if(!settings.Logging&&!settings.Mining&&!settings.Farming&&!settings.Cooking)throw new InvalidOperationException("请至少选择一项执行项目。");
+   var settings=Settings();if((settings.Farming&&!settings.FixedCrop||settings.Cooking)&&snapshot?.Recipes?.Length>0&&snapshot.Recipes.FirstOrDefault(r=>r.Id==settings.RecipeId)?.Available!=true)throw new InvalidOperationException("当前配方尚不可自动种植，请选择已解锁配方或取消种植项目。");if(!settings.Logging&&!settings.Mining&&!settings.Farming&&!settings.Cooking)throw new InvalidOperationException("请至少选择一项执行项目。");
+   if(settings.Farming&&settings.FixedCrop&&(settings.FixedSeedId<=0||snapshot?.Seeds?.FirstOrDefault(v=>v.Id==settings.FixedSeedId)?.Available!=true))throw new InvalidOperationException("请选择已解锁的固定作物；连接后会读取完整作物列表。");
    if(!TerritoryControlLink.Fresh(snapshot,DateTime.UtcNow)||!snapshot!.Ready)throw new InvalidOperationException("请先连接游戏并进入可走动的领地，等待实时状态。");
    if(!smoke)
    {
@@ -85,6 +95,12 @@ public partial class TerritoryWindow : Window
    UpdateDiagnostics();return;
   }
   var s=snapshot!;
+  if(s.Seeds?.Length>0)
+  {
+   var key=ui.Language.Language+"|"+string.Join("|",s.Seeds.Select(v=>v.Id+v.Label));
+   if(!FixedSeedBox.IsDropDownOpen&&key!=seedCatalogKey){refreshingRecipes=true;FixedSeedBox.ItemsSource=s.Seeds.Select(v=>new RecipeOption{Id=v.Id,Name=v.Name,Reason=ui.Language.Text(v.Reason),Available=v.Available}).ToArray();FixedSeedBox.SelectedValue=selectedSeed;seedCatalogKey=key;refreshingRecipes=false;}
+   var seed=s.Seeds.FirstOrDefault(v=>v.Id==selectedSeed);Set(FixedCropHint,seed==null?"请选择要固定种植的作物。":seed.Available?"每批同种 100 个，收获后继续种植此作物；切换时先完成当前播种回执。":seed.Reason);
+  }
   if(s.Recipes?.Length>0){var key=string.Join("|",s.Recipes.Select(v=>v.Id+v.Label+v.Ratio));if(!RecipeBox.IsDropDownOpen&&key!=recipeCatalogKey){refreshingRecipes=true;RecipeBox.ItemsSource=s.Recipes.Select(v=>new RecipeOption{Id=v.Id,Name=v.Name,Ratio=v.Ratio,Reason=ui.Language.Text(v.Reason),Available=v.Available}).ToArray();RecipeBox.SelectedValue=selectedRecipe;recipeCatalogKey=key;refreshingRecipes=false;}var r=s.Recipes.FirstOrDefault(v=>v.Id==selectedRecipe);Set(RecipeHint,r==null?"当前客户端已无此配方，请重新选择。":r.Available?r.Ratio+"。每批同种 100 个；切换时先完成当前播种回执。":r.Reason);}
   if(link.Enabled&&s.OwnerId==link.OwnerId&&!string.IsNullOrEmpty(s.Error))
   {try{link.Stop();}catch{}ShowError(s.Error);}
@@ -96,6 +112,7 @@ public partial class TerritoryWindow : Window
   Set(BatchText,s.BatchSeedId>0?$"当前作物：{s.Crops?.FirstOrDefault(c=>c.SeedId==s.BatchSeedId)?.Name??s.BatchSeedId.ToString()}　已确认 {s.BatchPlanted} / 100　完成 {s.CompletedBatches} 批":"开启后显示当前批次");
   Set(CookingText,$"已确认制作 {s.Cooked} 份"+(s.CookingState=="pending"?" · 等待服务器确认":""));
   BatchBar.Value=Math.Clamp(s.BatchPlanted,0,100);
+  CropsGrid.Columns[1].Visibility=s.ActiveFixedSeedId>0?Visibility.Collapsed:Visibility.Visible;
   CropsGrid.ItemsSource=(s.Crops??Array.Empty<CropStock>()).Select(c=>new CropRow(c.Name,c.Required,c.Inventory,c.Growing,ui.Language.Text(c.GrowthSeconds>=60?$"{c.GrowthSeconds/60} 分钟":$"{c.GrowthSeconds} 秒"))).ToArray();
   Set(StatsText,$"耕地 {s.Fields}，空地 {s.EmptyFields}，可收作物 {s.Mature} · 成熟树 {s.Trees} · 成熟矿点 {s.Ores}\n已确认采集 {s.GatherReplies} 次，物品 {s.ReceivedItems} 个 · 本次播种已用 {s.Spent}");
   StartButton.IsEnabled=s.Ready&&!link.Enabled&&!connecting;StopButton.IsEnabled=link.Enabled;ConnectButton.IsEnabled=!connecting&&!link.Enabled;UpdateDiagnostics();
@@ -146,6 +163,14 @@ public partial class TerritoryWindow : Window
   Feed();DiagnosticsPanel.IsExpanded=true;UpdateDiagnostics();Check(DataPathBox.Text==root&&DiagnosticsBox.Text.Contains("组件"),"诊断在界面内展示");DiagnosticsPanel.IsExpanded=false;
   s.Recipes=new[]{new RecipeOption{Id=3,Name="活力面疙瘩",Available=true,Ratio="土豆 5 : 小麦 3 : 蘑菇 2"},new RecipeOption{Id=7,Name="双原料料理",Available=true,Ratio="土豆 40 : 胡萝卜 20"}};Feed();
   RecipeBox.SelectedValue=7;command=TerritoryJson.Read<TerritoryControl>(Path.Combine(root,"control.json"));Check(command?.RecipeId==7&&!command.Enabled,"暂停时也保存并同步所选配方");Check(RecipeHint.Text.Contains("40"),"配方显示动态比例");RecipeBox.SelectedValue=3;
+  s.Seeds=new[]{new RecipeOption{Id=4,Name="活力蘑菇",Available=true},new RecipeOption{Id=9,Name="未解锁作物",Available=false,Reason="当前账号尚未解锁配方作物"}};Feed();
+  Check(PlantingModeBox.SelectedIndex==0&&FixedCropPanel.Visibility==Visibility.Collapsed,"旧设置默认按料理配比种植");
+  PlantingModeBox.SelectedIndex=1;StartClick(this,new());Check(!link.Enabled,"固定模式未选作物不能启动");ShowError("");
+  FixedSeedBox.SelectedValue=4;command=TerritoryJson.Read<TerritoryControl>(Path.Combine(root,"control.json"));Check(command?.FixedCrop==true&&command.FixedSeedId==4&&RecipePanel.Visibility==Visibility.Collapsed,"固定作物独立保存，隐藏无关的料理配比");
+  CookingBox.IsChecked=true;Check(RecipePanel.Visibility==Visibility.Visible,"固定种植同时自动料理时保留料理选择");CookingBox.IsChecked=false;
+  StartClick(this,new());Check(link.Enabled,"已解锁固定作物可以启动");StopClick(this,new());
+  FixedSeedBox.SelectedValue=9;StartClick(this,new());Check(!link.Enabled,"未解锁作物不能启动");ShowError("");FixedSeedBox.SelectedValue=4;
+  saved=TerritoryJson.Read<TerritorySettings>(Path.Combine(root,"settings.json"));Check(saved?.FixedCrop==true&&saved.FixedSeedId==4,"固定作物持久保存");
   var layoutWorld=new LayoutWorld{Account="test",WorldId=3,ProcessId=424242,CapturedUtcTicks=DateTime.UtcNow.Ticks,Chunks=new[]{new LayoutChunk{Id=1}},Catalog=new[]{new LayoutItem{Id=30008,Name="农田",Unlocked=true,Function=3,MaxCount=100,Layer=3,Costs=new[]{new LayoutCost{Id=1011,Type=66,Name="木材",Count=5,Owned=700}}}}};
   TerritoryJson.Write(Path.Combine(root,"layout-world.json"),layoutWorld);
   using(var layoutLink=new TerritoryControlLink(root))
@@ -167,7 +192,7 @@ public partial class TerritoryWindow : Window
   LanguageBox.SelectedIndex=0;
   Width=720;Height=610;UpdateLayout();Check(StartButton.IsVisible&&StopButton.IsVisible&&ConnectButton.IsVisible,"最小窗口保留操作栏");
   StartClick(this,new());Close();command=TerritoryJson.Read<TerritoryControl>(Path.Combine(root,"control.json"));Check(command?.Enabled==false,"关闭窗口停止控制租约");
-  var restored=new TerritoryWindow(root);Check(restored.NavMeshBox.IsChecked==false,"重新打开仍默认 A*");restored.NavMeshBox.IsChecked=true;restored.Close();
+  var restored=new TerritoryWindow(root);Check(restored.PlantingModeBox.SelectedIndex==1&&restored.FixedSeedBox.SelectedValue is int restoredSeed&&restoredSeed==4,"重新打开保留固定作物");Check(restored.NavMeshBox.IsChecked==false,"重新打开仍默认 A*");restored.NavMeshBox.IsChecked=true;restored.Close();
   restored=new TerritoryWindow(root);Check(restored.NavMeshBox.IsChecked==true,"重新打开保留主动选择的 NavMesh");restored.NavMeshBox.IsChecked=false;restored.Close();
   File.WriteAllText(Path.Combine(output,"results.json"),JsonSerializer.Serialize(new{status="pass",assertions=checks,isolatedRoot=root}));
  }

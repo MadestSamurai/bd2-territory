@@ -10,7 +10,7 @@ A standalone Fantasia Territory assistant for BrownDust II on Windows. Automate 
 
 ## Download
 
-Current version: **0.3.2-beta.1**. One application includes Simplified Chinese and English. Start with a small planting budget and cooking batch when evaluating this beta.
+Current version: **0.3.4-beta.1**. One application includes Simplified Chinese and English. Start with a small planting budget and cooking batch when evaluating this beta.
 
 | Edition | Runtime | Recommended for |
 | --- | --- | --- |
@@ -48,6 +48,12 @@ New installs and upgrades without a saved navigation preference default to NavMe
 
 Cooking does not buy ingredients, sell items or switch dishes. Unknown results keep their journal and pause further operations to avoid duplicate consumption. Check inventory and diagnostics; do not delete records to blindly retry.
 
+## Fixed crop planting and navigation
+
+Under **Planting and cooking**, choose **Balance a recipe** or **Plant a fixed crop**. Connect to load crop names and unlock status, then choose the crop to keep planting in batches of 100. Changes wait for the current planting transaction to finish; budgets and batch progress are preserved. Automatic cooking has its own recipe selection and remains optional.
+
+A* refines narrow passages when the coarse grid fails. Ground checks and discovered routes are cached and warmed incrementally while idle; workers and upcoming edges are checked live. Scene, layout, character and local resource changes invalidate the relevant cache. NavMesh remains optional and off by default.
+
 ## Layout tools
 
 Pause automation and open **Layouts**. Choose an area and template or load a file. Select **Preview layout and cost**, review the quote, then **Purchase and import**.
@@ -81,7 +87,7 @@ Requires Windows, PowerShell and .NET 8 SDK. From this repository root:
 .\package.ps1 -Locked
 ```
 
-Packages go to `dist/v0.3.2-beta.1/`. [Development](docs/DEVELOPMENT.md) · [Localization](docs/LOCALIZATION.md) · [Publication style](docs/PUBLICATION_STYLE.md) · [Release notes](docs/RELEASE_NOTES.md)
+Packages go to `dist/v0.3.4-beta.1/`. [Development](docs/DEVELOPMENT.md) · [Localization](docs/LOCALIZATION.md) · [Publication style](docs/PUBLICATION_STYLE.md) · [Release notes](docs/RELEASE_NOTES.md)
 
 ## License
 

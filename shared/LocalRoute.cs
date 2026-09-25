@@ -31,10 +31,10 @@ namespace BD2Territory
   public RouteSearchState State{get;private set;}public RoutePoint[] Path{get;private set;}=new RoutePoint[0];public int Expanded{get;private set;}
   public override string ToString()=>"state="+State+" expanded="+Expanded+" open="+open.Count+" samples="+samples.Count+" goals="+goals.Length+" path="+Path.Length;
   private static long Key(int x,int z)=>((long)x<<32)^(uint)z;
-  public LocalRouteSearch(RoutePoint start,RoutePoint[] destinations,Func<RoutePoint,RoutePoint?> samplePoint,Func<RoutePoint,RoutePoint,bool> edgeClear,double cell=.4,double margin=8,int maxNodes=18000)
+  public LocalRouteSearch(RoutePoint start,RoutePoint[] destinations,Func<RoutePoint,RoutePoint?> samplePoint,Func<RoutePoint,RoutePoint,bool> edgeClear,double cell=.4,double margin=8,int maxNodes=18000,bool worldAligned=false)
   {
    if(cell<=0||margin<0||maxNodes<1)throw new ArgumentException("Invalid local route bounds");
-   origin=start;goals=destinations;sample=samplePoint;clear=edgeClear;step=cell;limit=maxNodes;
+   origin=worldAligned?new RoutePoint(Math.Round(start.X/cell)*cell,start.Y,Math.Round(start.Z/cell)*cell):start;goals=destinations;sample=samplePoint;clear=edgeClear;step=cell;limit=maxNodes;
    if(goals.Length==0){State=RouteSearchState.Exhausted;return;}
    center=new RoutePoint(goals.Average(p=>p.X),start.Y,goals.Average(p=>p.Z));radius=goals.Max(p=>RoutePoint.Distance(p,center));
    minX=Math.Min(start.X,goals.Min(p=>p.X))-margin;maxX=Math.Max(start.X,goals.Max(p=>p.X))+margin;
@@ -54,7 +54,7 @@ namespace BD2Territory
     if(Expanded>=limit){State=RouteSearchState.Exhausted;return State;}
     for(int dx=-1;dx<=1;dx++)for(int dz=-1;dz<=1;dz++)
     {
-     if(dx==0&&dz==0)continue;int x=n.X+dx,z=n.Z+dz;long key=Key(x,z);var p=new RoutePoint(origin.X+x*step,n.P.Y,origin.Z+z*step);
+     if(dx==0&&dz==0)continue;int x=n.X+dx,z=n.Z+dz;long key=Key(x,z);var p=new RoutePoint(Math.Round(origin.X+x*step,5),n.P.Y,Math.Round(origin.Z+z*step,5));
      if(p.X<minX||p.X>maxX||p.Z<minZ||p.Z>maxZ)continue;
      if(!samples.TryGetValue(key,out var ground)){ground=sample(p);samples[key]=ground;}
      if(!ground.HasValue)continue;p=ground.Value;double cost=n.Cost+RoutePoint.Distance(n.P,p);

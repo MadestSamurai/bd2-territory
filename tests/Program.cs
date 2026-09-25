@@ -246,6 +246,7 @@ Check(recovery.Observe(now+TimeSpan.FromSeconds(12).Ticks,.5,true,false)==Naviga
 Check(!recovery.Recover(now+TimeSpan.FromSeconds(13).Ticks,1),"已到硬时限不能借冲刺恢复");
 recovery.Begin(now+TimeSpan.FromSeconds(14).Ticks,2);recovery.CancelAttempt();Check(!recovery.Recover(now+TimeSpan.FromSeconds(15).Ticks,1),"显式暂停不能被恢复路径复活");
 var options=JsonSerializer.Deserialize<TerritorySettings>("{\"Mining\":true,\"IntervalMs\":500}");Check(options.UseVehicle&&options.DashRecovery,"已有设置缺省开启两个新开关");
+checks+=PlantingPreviewTests.Run();checks+=FixedCropTests.Run();checks+=AdaptiveNavigationTests.Run();
 int localStart=checks;checks+=LocalNavigationTests.Run();int npcStart=checks;checks+=NpcOccupancyTests.Run();int popupStart=checks;checks+=BD2Territory.Runtime.PopupFlowTests.Run();
 int popupFlowChecks=checks-popupStart;int layoutRecipeChecks=LayoutRecipeTests.Run();checks+=layoutRecipeChecks;
 Console.WriteLine(JsonSerializer.Serialize(new{layoutRecipeChecks,status="passed",assertions=checks,gatheringChecks,navigationChecks,readinessChecks=interactionStart-readinessStart,interactionAndHandoffChecks=travelStart-interactionStart,travelChecks=localStart-travelStart,localNavigationChecks=npcStart-localStart,npcOccupancyChecks=popupStart-npcStart,popupFlowChecks,simulatedBatches=100,totalPotato=totals[2],totalWheat=totals[1],totalMushroom=totals[4]}));

@@ -43,8 +43,22 @@
     <Border Background="White" CornerRadius="8" Padding="18" Margin="0,0,0,14">
      <StackPanel>
       <TextBlock Text="{DynamicResource Ui48}" FontSize="15" FontWeight="SemiBold"/>
+      <ComboBox x:Name="PlantingModeBox" SelectedIndex="0" SelectionChanged="PlantingChanged" Margin="0,10,0,8" MinHeight="34" AutomationProperties.Name="{DynamicResource PlantingModeLabel}">
+       <ComboBoxItem Content="{DynamicResource RecipeModeLabel}"/><ComboBoxItem Content="{DynamicResource FixedModeLabel}"/>
+      </ComboBox>
+      <StackPanel x:Name="FixedCropPanel" Visibility="Collapsed" Margin="0,0,0,12">
+       <TextBlock Text="{DynamicResource FixedSeedLabel}" Margin="0,0,0,6"/>
+       <ComboBox x:Name="FixedSeedBox" SelectedValuePath="Id" SelectionChanged="PlantingChanged" MinHeight="34" AutomationProperties.Name="{DynamicResource FixedSeedLabel}">
+        <ComboBox.ItemTemplate><DataTemplate><StackPanel><TextBlock Text="{Binding Name}"/><TextBlock Text="{Binding Reason}" TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource MutedBrush}"/></StackPanel></DataTemplate></ComboBox.ItemTemplate>
+        <ComboBox.ItemContainerStyle><Style TargetType="ComboBoxItem"><Setter Property="IsEnabled" Value="{Binding Available}"/></Style></ComboBox.ItemContainerStyle>
+       </ComboBox>
+       <TextBlock x:Name="FixedCropHint" Text="{DynamicResource FixedCropHintLabel}" TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" Margin="0,6,0,0"/>
+      </StackPanel>
+      <StackPanel x:Name="RecipePanel">
+      <TextBlock Text="{DynamicResource RecipeLabel}" Margin="0,4,0,0"/>
       <ComboBox x:Name="RecipeBox" SelectedValuePath="Id" SelectionChanged="RecipeChanged" Margin="0,10,0,0" MinHeight="34" AutomationProperties.Name="{DynamicResource Ui49}"><ComboBox.ItemTemplate><DataTemplate><StackPanel MaxWidth="600"><TextBlock Text="{Binding Name}" FontWeight="SemiBold"/><TextBlock Text="{Binding Ratio}" TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" FontSize="12"/><TextBlock Text="{Binding Reason}" TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" FontSize="12"/></StackPanel></DataTemplate></ComboBox.ItemTemplate><ComboBox.ItemContainerStyle><Style TargetType="ComboBoxItem"><Setter Property="IsEnabled" Value="{Binding Available}"/></Style></ComboBox.ItemContainerStyle></ComboBox>
       <TextBlock x:Name="RecipeHint" Text="{DynamicResource Ui50}" TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" Margin="0,6,0,12"/>
+      </StackPanel>
       <WrapPanel Margin="0,0,0,10"><CheckBox x:Name="CookingBox" Content="{DynamicResource CookingLabel}" Checked="SettingsChanged" Unchecked="SettingsChanged"/><TextBlock Text="{DynamicResource CookingBatchLabel}" VerticalAlignment="Center" Margin="0,0,8,0"/><TextBox x:Name="CookingBatchBox" Width="80" LostFocus="SettingsChanged" AutomationProperties.Name="Cooking batch size"/></WrapPanel>
       <TextBlock Text="{DynamicResource CookingHint}" TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" Margin="0,0,0,8"/>
       <TextBlock x:Name="CookingText" TextWrapping="Wrap" Margin="0,0,0,8"/>

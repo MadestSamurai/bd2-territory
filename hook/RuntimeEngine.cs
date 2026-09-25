@@ -31,6 +31,7 @@ namespace BD2Territory.Runtime
   private readonly Dictionary<string,LifeWorldObjectDBInfo> worldObjects=new Dictionary<string,LifeWorldObjectDBInfo>();
   private readonly Dictionary<int,FarmEmptyProgress> emptyProgress=new Dictionary<int,FarmEmptyProgress>();
   private string farmScene="";
+  private readonly PlantingPreviewProgress plantingPreview=new PlantingPreviewProgress();
   private long lastWorldRead;private int worldReplies=-1;private string lastFarmDiagnostic="";private bool protectResources;
   private readonly Dictionary<int,long> skip=new Dictionary<int,long>();
   private RecipeBatchProgress progress;private string progressPath="",owner="",fault="",account="",lastReason="";private long lastScan,lastCrops,lastTick,lastInput,entered;
@@ -64,23 +65,26 @@ namespace BD2Territory.Runtime
     if(farmScene!=s.Scene){farmScene=s.Scene;gatheringStands.Clear();emptyProgress.Clear();network.ClearEvidence();failures.Clear();skip.Clear();ResetLocalRecovery();}
     RefreshWorld(now);SettleReceipt();SettleCooking();s.Cooked=cooking==null?0:cooking.ConfirmedTotal;s.CookingState=cooking==null?"":cooking.State;
     var c=control??new TerritoryControl();s.OwnerId=c.OwnerId;
-    s.Fields=farms.Length;s.EmptyFields=farms.Count(Empty);s.FarmState=FarmDiagnostic();s.Trees=nodes.Count(n=>Harvestable(n)&&Kind(n)==1);s.Ores=nodes.Count(n=>Harvestable(n)&&Kind(n)==2);s.Mature=nodes.Count(n=>Harvestable(n)&&Kind(n)==3);s.RetryTargets=nodes.Count(n=>Harvestable(n)&&failures.TryGetValue(ResourceKey(n),out var retry)&&retry.Failures>0);
+    s.Trees=nodes.Count(n=>Harvestable(n)&&Kind(n)==1);s.Ores=nodes.Count(n=>Harvestable(n)&&Kind(n)==2);s.Mature=nodes.Count(n=>Harvestable(n)&&Kind(n)==3);s.RetryTargets=nodes.Count(n=>Harvestable(n)&&failures.TryGetValue(ResourceKey(n),out var retry)&&retry.Failures>0);
     s.GatherReplies=network.GatherReplies;s.ReceivedItems=network.ReceivedItems;s.Network=network.Last;s.Spent=spent;
     ReadCatalog(s,c,now);
     if(LayoutTick(s,c,now)){Publish(s);return;}
     if(!c.Valid(now,pid)){Release();s.Reason="自动领地已停止";Publish(s);return;}
     if(owner!=c.OwnerId){Release();owner=c.OwnerId;fault="";network.ClearError();spent=0;account="";}
     if(!s.Ready){Release();s.Reason="请进入可走动的 Fantasia Territory 领地";Publish(s);return;}
+    if(c.Farming&&c.FixedCrop&&c.FixedSeedId<=0)throw new InvalidOperationException("请选择要固定种植的作物。");
     var user=(UserDBInfo)B.Read("Account.User",null);if(user==null||user.OwnerIndex<=0)throw new InvalidOperationException("尚未读取账号身份");string key=user.OwnerIndex.ToString();
     if(account!=key)
     {
      if(account.Length>0)throw new InvalidOperationException("游戏账号已切换，请停止后重新开启自动化");
-     Release();network.ClearEvidence();emptyProgress.Clear();failures.Clear();skip.Clear();account=key;progressPath=Path.Combine(LocalStorage.DataRoot,"progress-"+key+".json");progress=LoadProgress(progressPath,key);LoadCooking(key);if(RecipeBatchPlanner.SwitchRecipe(progress,c.RecipeId,false))SaveProgress(progress);crops=c.Farming?ReadCrops(progress.RecipeId):new CropStock[0];
+     Release();network.ClearEvidence();emptyProgress.Clear();failures.Clear();skip.Clear();account=key;progressPath=Path.Combine(LocalStorage.DataRoot,"progress-"+key+".json");progress=LoadProgress(progressPath,key);LoadCooking(key);if(RecipeBatchPlanner.SwitchPlanting(progress,c.RecipeId,c.FixedCrop?c.FixedSeedId:0,false))SaveProgress(progress);crops=c.Farming?ReadPlantingCrops(progress.RecipeId,progress.FixedSeedId):new CropStock[0];
      SettleReceipt();
     }
-    if(c.Farming&&progress.RecipeId!=c.RecipeId&&RecipeBatchPlanner.SwitchRecipe(progress,c.RecipeId,farmStage>0)){SaveProgress(progress);targetFarm=null;lastCrops=0;}
-    s.ActiveRecipeId=progress.RecipeId;spent=progress.BudgetOwner==owner?progress.Spent:0;
-    if(c.Farming&&now-lastCrops>TimeSpan.FromSeconds(1).Ticks){crops=ReadCrops(progress.RecipeId);lastCrops=now;}s.Crops=crops;s.BatchSeedId=progress.SeedId;s.BatchPlanted=progress.Planted;s.CompletedBatches=progress.Batches;
+    // Account / owner changes invalidate empty-field evidence. Count only AFTER that reset.
+    RefreshFarmSnapshot(s);
+    if(c.Farming&&(progress.RecipeId!=c.RecipeId||progress.FixedSeedId!=(c.FixedCrop?c.FixedSeedId:0))&&RecipeBatchPlanner.SwitchPlanting(progress,c.RecipeId,c.FixedCrop?c.FixedSeedId:0,farmStage>0)){SaveProgress(progress);targetFarm=null;lastCrops=0;}
+    s.ActiveRecipeId=progress.RecipeId;s.ActiveFixedSeedId=progress.FixedSeedId;spent=progress.BudgetOwner==owner?progress.Spent:0;
+    if(c.Farming&&now-lastCrops>TimeSpan.FromSeconds(1).Ticks){crops=ReadPlantingCrops(progress.RecipeId,progress.FixedSeedId);lastCrops=now;}s.Crops=crops;s.BatchSeedId=progress.SeedId;s.BatchPlanted=progress.Planted;s.CompletedBatches=progress.Batches;
     if(!c.Farming&&farmStage>0&&farmStage<4)Release();
     if(ownsTool&&targetNode!=null&&!Enabled(Kind(targetNode),c))StopMotion();
     bool pending=network.Waiting;if(network.Error.Length>0)fault=network.Error;if(fault.Length>0){Release();s.Error=fault;s.Reason="已暂停："+fault;Publish(s);return;}
@@ -95,6 +99,7 @@ namespace BD2Territory.Runtime
     if(vehicleRequest.TimedOut(now))throw new InvalidOperationException("载具加载超过 8 秒，已暂停；等待游戏完成加载后可重新开始。");
     if(AwaitGathering(s,now,pending)){Publish(s);return;}
     if(!RefreshNpcOccupancy()){StopMove();s.Reason="等待领地 NPC 占位信息";Publish(s);return;}
+    RefreshLocalCacheContext();
     if(farmStage>0){AdvancePlant(s,now);Publish(s);return;}
     if(progress.PendingToken.Length>0){ReconcilePending();s.Reason="已核对上次播种";Publish(s);return;}
     if(UnityEngine.Object.FindObjectsOfType<LifeFarmingUIPanel>().Any(B.Active)){StopMotion();s.Reason="请关闭手动播种界面后继续";Publish(s);return;}
@@ -102,7 +107,7 @@ namespace BD2Territory.Runtime
     if(ownsMove){ContinueWalk(s,now,c);Publish(s);return;}
     // Native tool motions may anchor the player. Observe the whole action above before any movement decision.
     var moveState=B.Read("Field.MoveState",field)?.ToString();if(moveState=="DontMove"||moveState=="Anchored"){s.Reason="等待游戏恢复角色移动";Publish(s);return;}
-    if(now-lastInput<TimeSpan.FromMilliseconds(c.IntervalMs).Ticks){s.Reason=lastReason;Publish(s);return;}
+    if(now-lastInput<TimeSpan.FromMilliseconds(c.IntervalMs).Ticks){WarmLocalGrid();s.Reason=lastReason;Publish(s);return;}
     // Finish a damaged node before switching tasks; a partially damaged resource heals after inactivity.
     if(targetNode!=null&&Harvestable(targetNode)&&Enabled(Kind(targetNode),c)){Gather(s,now);Publish(s);return;}targetNode=null;
     if(CookingTick(s,c,now)){Publish(s);return;}
@@ -119,11 +124,13 @@ namespace BD2Territory.Runtime
     if(targetNode!=null){Gather(s,now);}
     else if(c.Farming&&crops.Length>0&&c.PlantingBudget>0&&spent+(long)crops.Single(x=>x.SeedId==progress.SeedId).Price*RecipeBatchPlanner.BatchSize>c.PlantingBudget)s.Reason="剩余预算不足整批 100 个；仍可采集和收获";
     else s.Reason=c.Farming&&s.EmptyFields<RecipeBatchPlanner.BatchSize?"等待收齐 100 块空田再一次播种（当前 "+s.EmptyFields+" 块）；继续等待成熟或采集":"等待作物自然成熟或资源刷新";
+    if(targetNode==null)WarmLocalGrid();
     if(targetNode==null&&s.RetryTargets>0)s.Reason="待重试资源 "+s.RetryTargets+" 个，保留目标并定期重新检测";
     Publish(s);
    }catch(Exception e){fault=e.GetBaseException().Message;try{Release();}catch{}s.Enabled=false;s.Error=fault;s.Reason="已暂停："+fault;Publish(s);}
   }
-  private void Publish(TerritorySnapshot s){if(s.Reason!=lastReason){lastReason=s.Reason;LocalStorage.Log(s.Reason);}latest=s;}
+  private void RefreshFarmSnapshot(TerritorySnapshot s){s.Fields=farms.Length;s.EmptyFields=farms.Count(Empty);s.FarmState=FarmDiagnostic();}
+  private void Publish(TerritorySnapshot s){if(s.FarmState.Length==0)try{RefreshFarmSnapshot(s);}catch(Exception e){s.FarmState="农田状态暂不可读取："+e.GetBaseException().Message;}if(s.Reason!=lastReason){lastReason=s.Reason;LocalStorage.Log(s.Reason);}latest=s;}
   private static bool Enabled(int kind,TerritoryControl c)=>kind==1?c.Logging:kind==2?c.Mining:kind==3&&c.Farming;
   private bool Allowed(Component c,long now)=>(!skip.TryGetValue(c.GetInstanceID(),out var until)||now>=until)&&(!(c is LifeGatheringObject n)||!failures.TryGetValue(ResourceKey(n),out var f)||f.Available(now));
   private static string ResourceKey(LifeGatheringObject n)
@@ -179,12 +186,14 @@ namespace BD2Territory.Runtime
   }
   private LifeWorldObjectDBInfo CurrentDb(LifeFarmFieldObject f)
   {if(!B.Active(f)||Db(f)==null)return null;return worldObjects.TryGetValue(FarmKey(f),out var db)?db:null;}
-  private bool Empty(LifeFarmFieldObject f)
+  private bool Empty(LifeFarmFieldObject f)=>ReadFarmReadiness(f)==FarmReadiness.Empty;
+  private FarmReadiness ReadFarmReadiness(LifeFarmFieldObject f)
   {
-   var db=CurrentDb(f);if(db==null)return false;
-   var crop=B.Read("Farm.Crop",f) as LifeGatheringObject;
+   if(!B.Active(f))return FarmReadiness.Unknown;
    int id=f.GetInstanceID();if(!emptyProgress.TryGetValue(id,out var state))emptyProgress[id]=state=new FarmEmptyProgress();
-   return state.Observe(DateTime.UtcNow.Ticks,true,db.InnerObject.Any(x=>x.Status>0),(bool)B.Read("Farm.Occupied",f),B.Active(crop)&&Convert.ToDouble(B.Read("Gather.Hp",crop))>0,f.IsPreviewCandidateAvailable(f.GetFieldWorldCenter()),network.Waiting,network.HarvestConfirmed(FarmKey(f)));
+   var db=CurrentDb(f);var crop=db==null?null:B.Read("Farm.Crop",f) as LifeGatheringObject;
+   state.Observe(DateTime.UtcNow.Ticks,db!=null,db!=null&&db.InnerObject.Any(x=>x.Status>0),db!=null&&(bool)B.Read("Farm.Occupied",f),B.Active(crop)&&Convert.ToDouble(B.Read("Gather.Hp",crop))>0,db!=null&&f.IsPreviewCandidateAvailable(f.GetFieldWorldCenter()),network.Waiting,db!=null&&network.HarvestConfirmed(FarmKey(f)));
+   return state.Status;
   }
   private string FarmDiagnostic()
   {
@@ -200,18 +209,26 @@ namespace BD2Territory.Runtime
    return "共 "+farms.Length+" 格，世界缓存在种 "+planted+"（已核对空田 "+stale+"）"+"，原生占用 "+occupied+"，存活作物 "+live+"，缓存种子 "+cached+"，数据未载入 "+unknown;
   }
   private static string FarmKey(LifeFarmFieldObject f)=>TerritoryNetwork.Key(Convert.ToInt32(B.Read("Farm.Chunk",f.GetPlaceableObject())),Db(f));
+  private CropStock[] ReadPlantingCrops(int recipeId,int fixedSeedId)
+  {return fixedSeedId>0?new[]{ReadCrop((LifeCropSeedTable)B.Invoke("Tables.Crop",fixedSeedId),1)}:ReadCrops(recipeId);}
   private CropStock[] ReadCrops(int recipeId)
   {
    var recipe=(LifeCookTable)B.Invoke("Tables.Cook",recipeId);if(recipe==null||recipe.RequireItemUniqueId.Count==0||recipe.RequireItemUniqueId.Count!=recipe.RequireItemCount.Count||recipe.RequireItemCount.Any(v=>v<=0))throw new InvalidOperationException("料理配方不完整");
-   var loadedFields=farms.Where(f=>Db(f)!=null).GroupBy(FarmKey).ToDictionary(g=>g.Key,g=>g.First());var ids=(IEnumerable<int>)B.Invoke("Tables.CropIds");var seeds=ids.Select(id=>(LifeCropSeedTable)B.Invoke("Tables.Crop",id)).ToArray();var user=(LifeUserDBInfo)B.Read("Inventory.User",null);
+   var seeds=((IEnumerable<int>)B.Invoke("Tables.CropIds")).Select(id=>(LifeCropSeedTable)B.Invoke("Tables.Crop",id)).Where(v=>v!=null).ToArray();
    return recipe.RequireItemUniqueId.Select((id,i)=>{
-    var matches=seeds.Where(v=>v.ItemGroupId==id).ToArray();if(matches.Length!=1)throw new InvalidOperationException("含无法自动种植的原料");var seed=matches[0];var item=(LifeItemTable)B.Invoke("Tables.Item",id);var reward=(LifeGatheringObjectTable)B.Invoke("Tables.Harvest",id);
-    if(seed.PriceType!=64||seed.PriceId!=0||reward==null||reward.RewardItemUniqueId.Count!=1||reward.RewardItemUniqueId[0]!=id)throw new InvalidOperationException("作物价格或收获表已变化");
-    if(user?.LifeCharLevelInfo==null||user.LifeCharLevelInfo.FarmingLevel<item.UnlockContentLevel)throw new InvalidOperationException("当前账号尚未解锁配方作物");
-    var itemIds=(IEnumerable<int>)B.Invoke("Tables.ItemIds",id);long stock=itemIds.Sum(v=>Convert.ToInt64(B.Invoke("Inventory.Count",v)));
-    int growing=worldObjects.Count(entry=>((LifeBuildingObjectTable)B.Invoke("Tables.Building",entry.Value.ObjectId))?.FunctionType==3&&entry.Value.InnerObject.Any(n=>n.ObjectId==seed.Id&&n.Status>0)&&(!loadedFields.TryGetValue(entry.Key,out var field)||!Empty(field)));
-    return new CropStock{SeedId=seed.Id,IngredientId=id,Name=(string)B.Invoke("Text.Name",item.NameTextId),Required=recipe.RequireItemCount[i],Yield=reward.RewardItemCount[0],Inventory=stock,Growing=growing,Price=seed.PriceCount,GrowthSeconds=seed.TotalGrowthTime};
+    var matches=seeds.Where(v=>v.ItemGroupId==id).ToArray();if(matches.Length!=1)throw new InvalidOperationException("含无法自动种植的原料");return ReadCrop(matches[0],recipe.RequireItemCount[i]);
    }).ToArray();
+  }
+  private CropStock ReadCrop(LifeCropSeedTable seed,int required)
+  {
+   if(seed==null)throw new InvalidOperationException("当前客户端已无此作物，请重新选择。");
+   int id=seed.ItemGroupId;var item=(LifeItemTable)B.Invoke("Tables.Item",id);var reward=(LifeGatheringObjectTable)B.Invoke("Tables.Harvest",id);var user=(LifeUserDBInfo)B.Read("Inventory.User",null);
+   if(item==null||seed.PriceType!=64||seed.PriceId!=0||seed.PriceCount<0||reward==null||reward.RewardItemUniqueId.Count!=1||reward.RewardItemUniqueId[0]!=id||reward.RewardItemCount.Count!=1||reward.RewardItemCount[0]<=0)throw new InvalidOperationException("作物价格或收获表已变化");
+   if(user?.LifeCharLevelInfo==null||user.LifeCharLevelInfo.FarmingLevel<item.UnlockContentLevel)throw new InvalidOperationException("当前账号尚未解锁配方作物");
+   var itemIds=(IEnumerable<int>)B.Invoke("Tables.ItemIds",id);long stock=itemIds.Sum(v=>Convert.ToInt64(B.Invoke("Inventory.Count",v)));
+   var loadedFields=farms.Where(f=>Db(f)!=null).GroupBy(FarmKey).ToDictionary(g=>g.Key,g=>g.First());
+   int growing=worldObjects.Count(entry=>((LifeBuildingObjectTable)B.Invoke("Tables.Building",entry.Value.ObjectId))?.FunctionType==3&&entry.Value.InnerObject.Any(n=>n.ObjectId==seed.Id&&n.Status>0)&&(!loadedFields.TryGetValue(entry.Key,out var field)||!Empty(field)));
+   return new CropStock{SeedId=seed.Id,IngredientId=id,Name=(string)B.Invoke("Text.Name",item.NameTextId),Required=required,Yield=reward.RewardItemCount[0],Inventory=stock,Growing=growing,Price=seed.PriceCount,GrowthSeconds=seed.TotalGrowthTime};
   }
   private void Plant(TerritorySnapshot s,CropStock crop,long now)
   {
@@ -219,7 +236,7 @@ namespace BD2Territory.Runtime
    if(!targetFarm.IsPlayerInInteractionRange(player.transform.position)||!NpcStandClear(player.transform.position)){Approach(targetFarm,targetFarm.GetFieldWorldCenter(),s,now,1.0f);return;}
    StopMotion();if(!FootReady(s))return;navigation.Reset();triedDestinations.Clear();B.InvokeOn("Farm.Open",targetFarm);panel=UnityEngine.Object.FindObjectsOfType<LifeFarmingUIPanel>().FirstOrDefault(B.Active);if(panel==null)throw new InvalidOperationException("播种界面未打开");
    // Take ownership immediately, so a failed preview closes the panel instead of leaving manual UI behind.
-   farmStage=1;entered=lastInput=now;batchFields=new string[0];
+   farmStage=1;entered=lastInput=now;batchFields=new string[0];plantingPreview.Reset();
    // The multi button is hidden on the seed-list page; select a seed before clicking it.
    panel.OnClickSelectedCropSeed(crop.SeedId);
    if(!(bool)B.Read("Panel.Multi",panel))
@@ -240,15 +257,26 @@ namespace BD2Territory.Runtime
   private void AdvancePlant(TerritorySnapshot s,long now)
   {
    s.Reason="整批播种确认 · "+farmStage;s.Target="同种作物 × 100 · 一次提交";
-   if(now-entered>TimeSpan.FromSeconds(30).Ticks)throw new InvalidOperationException("播种阶段未推进，请检查游戏界面；不会重复支付");
+   if(now-entered>TimeSpan.FromSeconds(30).Ticks)throw new InvalidOperationException("播种阶段未推进，请检查游戏界面；不会重复支付"+(plantingPreview.Reason.Length>0?"；"+plantingPreview.Reason:""));
    if(now-lastInput<TimeSpan.FromMilliseconds(Math.Max(350,control.IntervalMs)).Ticks)return;
    if(farmStage==1)
    {
     if(panel==null||!B.Active(panel))throw new InvalidOperationException("播种界面意外关闭");
     var group=B.Singleton(B.Type("FarmGroup"));if(group==null)throw new InvalidOperationException("农田分组尚未就绪");
     var preview=((IEnumerable<LifeFarmFieldObject>)B.InvokeOn("FarmGroup.Preview",group)).ToArray();
-    batchFields=preview.Select(FarmKey).ToArray();
-    if(!PlantingTransaction.ValidKeys(batchFields)||preview.Any(f=>!Empty(f)))throw new InvalidOperationException("游戏批量预览为 "+preview.Length+" 格；请将 100 块空田连成一片后重试");
+    var keys=preview.Select(f=>B.Active(f)&&Db(f)!=null?FarmKey(f):"").ToArray();
+    var readiness=preview.Select(ReadFarmReadiness).ToArray();
+    var decision=plantingPreview.Evaluate((bool)B.Read("Panel.Multi",panel),keys,readiness);
+    if(decision==PlantingPreviewDecision.Refresh)
+    {
+     // Ask the game's existing preview events to recompute once; no movement or direct field edits.
+     if(targetFarm==null||!B.Active(targetFarm))throw new InvalidOperationException("播种目标已消失");
+     targetFarm.ShowNearestFarmCellPreview(true);targetFarm.RefreshNearestFarmCellPreview();
+     lastInput=now;s.Reason=plantingPreview.Reason;return;
+    }
+    if(decision==PlantingPreviewDecision.Wait){s.Reason=plantingPreview.Reason;return;}
+    if(decision==PlantingPreviewDecision.Reject){LocalStorage.Log("播种预检失败："+plantingPreview.Reason+"；"+s.FarmState);throw new InvalidOperationException(plantingPreview.Reason);}
+    batchFields=keys;
     if(!(bool)B.Read("Panel.CanAfford",panel))throw new InvalidOperationException("货币不足以一次播种 100 个");
     if(!panel.IsClickUI((GameObject)B.Read("Panel._cropButtonObj",panel)))throw new InvalidOperationException("游戏未接受整批预览");
     farmStage=2;lastInput=now;return;
@@ -501,7 +529,7 @@ namespace BD2Territory.Runtime
   }
   private static RecipeBatchProgress LoadProgress(string path,string key)
   {
-   if(!File.Exists(path))return new RecipeBatchProgress{Account=key};using(var f=File.OpenRead(path)){var p=(RecipeBatchProgress)new DataContractJsonSerializer(typeof(RecipeBatchProgress)).ReadObject(f);if(p.Schema!=3||p.Account!=key||p.RecipeId<=0||(p.Planted!=0&&p.Planted!=100)||p.Batches<0||p.Spent<0||p.PendingKeys==null||p.PendingToken==null||p.PendingOwner==null||p.BudgetOwner==null||p.LastReceipt==null)throw new InvalidOperationException("种植进度身份不匹配");return p;}
+   if(!File.Exists(path))return new RecipeBatchProgress{Account=key};using(var f=File.OpenRead(path)){var p=(RecipeBatchProgress)new DataContractJsonSerializer(typeof(RecipeBatchProgress)).ReadObject(f);if(p.Schema!=3||p.Account!=key||p.RecipeId<=0||p.FixedSeedId<0||(p.Planted!=0&&p.Planted!=100)||p.Batches<0||p.Spent<0||p.PendingKeys==null||p.PendingToken==null||p.PendingOwner==null||p.BudgetOwner==null||p.LastReceipt==null)throw new InvalidOperationException("种植进度身份不匹配");return p;}
   }
   private void ReconcilePending()
   {

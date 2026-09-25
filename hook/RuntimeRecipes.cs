@@ -7,7 +7,7 @@ namespace BD2Territory.Runtime
 {
  internal sealed partial class RuntimeEngine
  {
-  private long lastCatalog;private RecipeOption[] recipes=new RecipeOption[0];
+  private long lastCatalog;private RecipeOption[] recipes=new RecipeOption[0],seedOptions=new RecipeOption[0];
   private void ReadCatalog(TerritorySnapshot s,TerritoryControl c,long now)
   {
    if(!s.Ready)return;
@@ -23,10 +23,19 @@ namespace BD2Territory.Runtime
      catch(Exception e){option.Reason=e.GetBaseException().Message;}
      result.Add(option);
     }
-    recipes=result.ToArray();
+    recipes=result.ToArray();var seedResult=new List<RecipeOption>();
+    foreach(var id in (IEnumerable<int>)B.Invoke("Tables.CropIds"))
+    {
+     var seed=(LifeCropSeedTable)B.Invoke("Tables.Crop",id);if(seed==null)continue;
+     var item=(LifeItemTable)B.Invoke("Tables.Item",seed.ItemGroupId);
+     var option=new RecipeOption{Id=id,Name=item==null?"作物 "+id:(string)B.Invoke("Text.Name",item.NameTextId)};
+     try{ReadCrop(seed,1);option.Available=true;}catch(Exception e){option.Reason=e.GetBaseException().Message;}
+     seedResult.Add(option);
+    }
+    seedOptions=seedResult.ToArray();
    }
-   s.Recipes=recipes;
-   if(!c.Valid(now,pid)){s.ActiveRecipeId=c.RecipeId;try{s.Crops=ReadCrops(c.RecipeId);}catch{s.Crops=new CropStock[0];}}
+   s.Recipes=recipes;s.Seeds=seedOptions;
+   if(!c.Valid(now,pid)){s.ActiveRecipeId=c.RecipeId;s.ActiveFixedSeedId=c.FixedCrop?c.FixedSeedId:0;try{s.Crops=c.FixedCrop&&c.FixedSeedId<=0?new CropStock[0]:ReadPlantingCrops(c.RecipeId,s.ActiveFixedSeedId);}catch{s.Crops=new CropStock[0];}}
   }
  }
 }

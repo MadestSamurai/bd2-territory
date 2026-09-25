@@ -6,6 +6,7 @@ namespace BD2Territory
  public sealed class RecipeBatchProgress
  {
   public int Schema{get;set;}=3;public string Account{get;set;}="";public int RecipeId{get;set;}=3;
+  public int FixedSeedId{get;set;}
   public int SeedId{get;set;}public int Planted{get;set;}public int Batches{get;set;}
   public string[] PendingKeys{get;set;}=new string[0];public int PendingSeed{get;set;}
   public string PendingToken{get;set;}="";public int PendingCost{get;set;}public string PendingOwner{get;set;}="";
@@ -29,10 +30,14 @@ namespace BD2Territory
   }
   public static bool SwitchRecipe(RecipeBatchProgress p,int recipeId,bool batchActive)
   {
-   if(recipeId<=0)throw new ArgumentException("配方编号无效");
-   if(p.RecipeId==recipeId)return true;
+   return SwitchPlanting(p,recipeId,0,batchActive);
+  }
+  public static bool SwitchPlanting(RecipeBatchProgress p,int recipeId,int fixedSeedId,bool batchActive)
+  {
+   if(recipeId<=0||fixedSeedId<0)throw new ArgumentException("配方或作物编号无效");
+   if(p.RecipeId==recipeId&&p.FixedSeedId==fixedSeedId)return true;
    if(batchActive||!string.IsNullOrEmpty(p.PendingToken))return false;
-   p.RecipeId=recipeId;p.SeedId=0;p.Planted=0;return true;
+   p.RecipeId=recipeId;p.FixedSeedId=fixedSeedId;p.SeedId=0;p.Planted=0;return true;
   }
   public static bool Confirm(RecipeBatchProgress p,int seed,int count,string receipt)
   {

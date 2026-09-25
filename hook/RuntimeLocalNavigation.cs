@@ -8,8 +8,8 @@ namespace BD2Territory.Runtime
 {
  internal sealed partial class RuntimeEngine
  {
-  private LocalRouteSearch localSearch;private Vector3[] localRoute=new Vector3[0];private int localIndex,localTarget;
-  private bool localMoving;private long localPlanAt,localProgressAt;private double localBest;
+  private AdaptiveLocalRoute localSearch;private Vector3[] localRoute=new Vector3[0];private int localIndex,localTarget;
+  private bool localMoving,localFine;private Vector3 localOrigin;private long localPlanAt,localProgressAt;private double localBest;
   private readonly LocalRecoveryBudget localBudget=new LocalRecoveryBudget();private readonly List<Vector3> localBlocked=new List<Vector3>();
   private static RoutePoint Point(Vector3 p)=>new RoutePoint(p.x,p.y,p.z);
   private static Vector3 Vector(RoutePoint p)=>new Vector3((float)p.X,(float)p.Y,(float)p.Z);
@@ -38,14 +38,38 @@ namespace BD2Territory.Runtime
   }
   private RoutePoint? LocalSample(RoutePoint p)
   {
-   Vector3 point;if(!GroundPoint(Vector(p),out point)||localBlocked.Any(b=>FlatDistance(b,point)<.26f))return null;return Point(point);
+   var ground=CachedGround(p);if(!ground.HasValue)return null;var point=Vector(ground.Value);
+   if(localBlocked.Any(b=>FlatDistance(b,point)<.26f))return null;
+   // The origin may overlap a stationary worker. Allow only outward steps from that overlap;
+   // PlanEdge still checks each edge monotonically against every current NPC footprint.
+   if(!NpcStandClear(point)&&(FlatDistance(localOrigin,point)>2||!NpcPathClear(localOrigin,point)))return null;
+   return ground;
   }
   private bool LocalEdge(RoutePoint a,RoutePoint b)
   {
-   var from=Vector(a);var to=Vector(b);if(!NpcPathClear(from,to)||Obstacle(from,to)!=null||Math.Abs(a.Y-b.Y)>.35)return false;
+   return NpcPathClear(Vector(a),Vector(b))&&StaticLocalEdge(a,b,false);
+  }
+  private bool PlanEdge(RoutePoint a,RoutePoint b)
+  {
+   if(!NpcPathClear(Vector(a),Vector(b)))return false;
+   // Recovery exclusions belong to this attempt; never memoize them as permanent terrain.
+   if(localBlocked.Any(p=>SegmentNear(Point(p),a,b,.26)))return false;
+   return localEdges.Get(new RouteEdgeKey(a,b),DateTime.UtcNow.Ticks,()=>StaticLocalEdge(a,b,true));
+  }
+  private static bool SegmentNear(RoutePoint p,RoutePoint a,RoutePoint b,double radius)
+  {
+   double x=b.X-a.X,z=b.Z-a.Z,length=x*x+z*z;double t=length<1e-12?0:Math.Max(0,Math.Min(1,((p.X-a.X)*x+(p.Z-a.Z)*z)/length));
+   return RoutePoint.Distance(p,new RoutePoint(a.X+x*t,a.Y,a.Z+z*t))<radius;
+  }
+  private bool StaticLocalEdge(RoutePoint a,RoutePoint b,bool cached)
+  {
+   var from=Vector(a);var to=Vector(b);if(Obstacle(from,to)!=null||Math.Abs(a.Y-b.Y)>.35)return false;
    int steps=Math.Max(1,(int)Math.Ceiling(FlatDistance(from,to)/.2f));var previous=from;
    for(int i=1;i<=steps;i++)
-   {var wanted=Vector3.Lerp(from,to,(float)i/steps);Vector3 ground;if(!GroundPoint(wanted,out ground,true,false)||Math.Abs(ground.y-previous.y)>.25f||localBlocked.Any(p=>FlatDistance(p,ground)<.26f))return false;previous=ground;}
+   {var wanted=Vector3.Lerp(from,to,(float)i/steps);Vector3 ground;
+    if(cached){var found=CachedGround(Point(wanted));if(!found.HasValue)return false;ground=Vector(found.Value);}
+    else if(!GroundPoint(wanted,out ground,true,false))return false;
+    if(Math.Abs(ground.y-previous.y)>.25f||!cached&&localBlocked.Any(p=>FlatDistance(p,ground)<.26f))return false;previous=ground;}
    return true;
   }
   private bool InInteractionRange(Component target,Vector3 point)
@@ -67,7 +91,7 @@ namespace BD2Territory.Runtime
     yield return p;
    }
   }
-  private void ResetLocalRecovery(){localBudget.Reset();localBlocked.Clear();localTarget=0;}
+  private void ResetLocalRecovery(){localBudget.Reset();localBlocked.Clear();localTarget=0;localFine=false;}
   private void ClearLocalMotion(){localSearch=null;localMoving=false;localRoute=new Vector3[0];localIndex=0;}
   private bool BeginLocalRoute(Component target,TerritorySnapshot s,long now,string reason)
   {
@@ -82,31 +106,37 @@ namespace BD2Territory.Runtime
    var center=target is LifeFarmFieldObject farm?farm.GetFieldWorldCenter():target.transform.position;
    var goals=StandCandidates(target,center,.7f,gatheringReposition).Select(Point).ToArray();
    if(goals.Length==0){LocalStorage.Log("局部规划无站位 target="+target.GetInstanceID()+" reason="+reason);return false;}
-   localSearch=new LocalRouteSearch(Point(player.transform.position),goals,LocalSample,LocalEdge,.4,localBudget.Plans==1?8:14,18000);
-   localRoute=new Vector3[0];localIndex=0;localMoving=true;localPlanAt=now;
+   localOrigin=player.transform.position;localMoving=true;localPlanAt=now;
+   var saved=localPaths.Reuse(target.GetInstanceID(),now,Point(localOrigin),p=>goals.Any(g=>RoutePoint.Distance(g,p)<.06)&&StandClear(Vector(p))&&CanGatherAt(target,Vector(p)),LocalEdge);
+   if(saved!=null){localSearch=null;SetLocalRoute(saved,now);s.Reason="复用已检测通路，实时核对障碍";LocalStorage.Log("实体路线缓存命中 target="+target.GetInstanceID()+" points="+saved.Length);return true;}
+   localSearch=new AdaptiveLocalRoute(Point(localOrigin),goals,LocalSample,PlanEdge,localFine,localBudget.Plans==1?8:14);
+   localRoute=new Vector3[0];localIndex=0;
    LocalStorage.Log("实体局部规划 target="+target.GetInstanceID()+" reason="+reason+" plan="+localBudget.Plans+" goals="+goals.Length+" from="+player.transform.position);
    s.Reason="检测周围障碍，规划普通移动绕行";return true;
   }
+  private void SetLocalRoute(RoutePoint[] path,long now)
+  {localRoute=path.Select(Vector).ToArray();finalDestination=localRoute.Last();localIndex=1;localBest=double.PositiveInfinity;localProgressAt=now;}
   private void RetryLocal(TerritorySnapshot s,long now,string reason,Vector3 blocked)
   {
-   move.ClearMove();move.StopMove();localBlocked.Add(blocked);CaptureFailure(reason);
+   move.ClearMove();move.StopMove();InvalidateLocalArea(blocked);localPaths.Forget(localTarget);localBlocked.Add(blocked);CaptureFailure(reason);
    if(!BeginLocalRoute(walkTarget,s,now,reason))SkipWalkTarget(walkTarget,s,now,reason);
   }
   private void ContinueLocal(TerritorySnapshot s,long now,TerritoryControl c)
   {
    s.Reason="沿实体通路绕行，保持原目标";
+   if(localBudget.Expired(now)){SkipWalkTarget(walkTarget,s,now,"local_recovery_budget");return;}
    if(vehiclePending){move.StopMove();localProgressAt=now;s.Reason="等待载具加载结束后绕行";return;}
    var field=B.Read("Field.Instance",null);string state=B.Read("Field.MoveState",field)?.ToString();
    if(state=="DontMove"||state=="Anchored"){move.ClearMove();s.Reason="等待游戏恢复角色移动";return;}
-   if(localBudget.Expired(now)){SkipWalkTarget(walkTarget,s,now,"local_recovery_budget");return;}
    if(localSearch!=null)
    {
     if(now-localPlanAt>TimeSpan.FromSeconds(15).Ticks){SkipWalkTarget(walkTarget,s,now,"local_planning_budget");return;}
-    var status=localSearch.Step(96,6);s.Reason="扫描地面和碰撞体 · "+localSearch.Expanded+" 个路点";
+    if(now-localPlanAt>=TimeSpan.FromSeconds(4).Ticks)localSearch.Refine();
+    var status=localSearch.Step(256,6);localFine=localSearch.Cell<.4;s.Reason=(localFine?"细化窄路网格 · ":"扫描地面和碰撞体 · ")+localSearch.Expanded+" 个路点";
     if(status==RouteSearchState.Searching)return;
     if(status==RouteSearchState.Exhausted)
     {int count=localSearch.Expanded;LocalStorage.Log("实体局部规划未找到通路 target="+walkTarget.GetInstanceID()+" expanded="+count);if(localBudget.Plans<2&&BeginLocalRoute(walkTarget,s,now,"expand_local_area"))return;SkipWalkTarget(walkTarget,s,now,"local_route_exhausted");return;}
-    localRoute=localSearch.Path.Select(Vector).ToArray();finalDestination=localRoute.Last();localIndex=1;localSearch=null;localBest=double.PositiveInfinity;localProgressAt=now;
+    var path=localSearch.Path;localPaths.Save(localTarget,now,path);SetLocalRoute(path,now);localSearch=null;
     LocalStorage.Log("实体局部路线就绪 target="+walkTarget.GetInstanceID()+" points="+localRoute.Length+" goal="+localRoute.Last());
    }
    var from=player.transform.position;
@@ -115,7 +145,7 @@ namespace BD2Territory.Runtime
    if(GatherStandReached(walkTarget,from,localIndex>=localRoute.Length,detected))
    {int id=walkTarget.GetInstanceID();LocalStorage.Log("实体站位到达 target="+id+" recovery="+gatheringReposition+" actual="+from.ToString("F3")+" goal="+finalDestination.ToString("F3"));StopMove();ResetLocalRecovery();navigation.Reset();interaction.Select(id);interaction.Arrived(now);gatheringReposition=false;s.Reason="绕行已到位，准备采集";return;}
    while(localIndex<localRoute.Length&&FlatDistance(from,localRoute[localIndex])<.10f&&(localIndex<localRoute.Length-1||CanGatherAt(walkTarget,from)))localIndex++;
-   if(localIndex>=localRoute.Length){if(!NpcStandClear(from))RetryLocal(s,now,"npc_arrival_occupied",from);else if(!CanGatherAt(walkTarget,from))RetryLocal(s,now,"local_arrival_outside_range",from);else move.StopMove();return;}
+   if(localIndex>=localRoute.Length){if(!NpcStandClear(from))RetryLocal(s,now,"npc_arrival_occupied",from);else if(!CanGatherAt(walkTarget,from))RetryLocal(s,now,"local_arrival_outside_range",from);else if(!StandClear(from))RetryLocal(s,now,"local_arrival_obstructed",from);else move.StopMove();return;}
    // Follow a visible corridor, not every grid corner. Recheck against live colliders before steering.
    for(int j=Math.Min(localRoute.Length-1,localIndex+4);j>localIndex;j--)if(FlatDistance(from,localRoute[j])<=1.4f&&LocalEdge(Point(from),Point(localRoute[j]))){localIndex=j;break;}
    var dest=localRoute[localIndex];var delta=dest-from;delta.y=0;
