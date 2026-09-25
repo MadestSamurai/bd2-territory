@@ -65,7 +65,7 @@ namespace BD2Territory.Runtime
     terrainController=ctx==null?null:ctx.GetType().GetMethods().Single(m=>m.Name=="GetTickBase"&&m.IsGenericMethod&&m.GetParameters().Length==0).MakeGenericMethod(typeof(FieldEvent.Life.LifeChunkController)).Invoke(ctx,null) as FieldEvent.Life.LifeChunkController;
     s.Ready=player!=null&&move!=null&&tool!=null&&surfaces.Any(v=>v is AvatarLifeGameFieldDefaultUI||v is AvatarLifeHousingEditUI||v is AvatarLifeLevelUpPopupUI||v is AvatarLifeNewItemPopupUI);
     if(farmScene!=s.Scene){farmScene=s.Scene;gatheringStands.Clear();emptyProgress.Clear();network.ClearEvidence();failures.Clear();skip.Clear();ResetLocalRecovery();}
-    RefreshWorld(now);SettleReceipt();SettleCooking();s.Cooked=cooking==null?0:cooking.ConfirmedTotal;s.CookingState=cooking==null?"":cooking.State;
+    RefreshWorld(now);SettleReceipt();SettleCooking();SettleSales();s.SoldItems=sales==null?0:sales.ConfirmedItems;s.SaleCurrency=sales==null?0:sales.ConfirmedCurrency;s.SalesState=sales==null?"":sales.State;s.Cooked=cooking==null?0:cooking.ConfirmedTotal;s.CookingState=cooking==null?"":cooking.State;
     var c=control??new TerritoryControl();s.OwnerId=c.OwnerId;
     s.Trees=nodes.Count(n=>Harvestable(n)&&Kind(n)==1);s.Ores=nodes.Count(n=>Harvestable(n)&&Kind(n)==2);s.Mature=nodes.Count(n=>Harvestable(n)&&Kind(n)==3);s.RetryTargets=nodes.Count(n=>Harvestable(n)&&failures.TryGetValue(ResourceKey(n),out var retry)&&retry.Failures>0);
     s.GatherReplies=network.GatherReplies;s.ReceivedItems=network.ReceivedItems;s.Network=network.Last;s.Spent=spent;
@@ -80,7 +80,7 @@ namespace BD2Territory.Runtime
     if(account!=key)
     {
      if(account.Length>0)throw new InvalidOperationException("游戏账号已切换，请停止后重新开启自动化");
-     Release();network.ClearEvidence();emptyProgress.Clear();failures.Clear();skip.Clear();account=key;progressPath=Path.Combine(LocalStorage.DataRoot,"progress-"+key+".json");progress=LoadProgress(progressPath,key);LoadCooking(key);if(RecipeBatchPlanner.SwitchPlanting(progress,c.RecipeId,c.FixedCrop?c.FixedSeedId:0,false))SaveProgress(progress);crops=c.Farming?ReadPlantingCrops(progress.RecipeId,progress.FixedSeedId):new CropStock[0];
+     Release();network.ClearEvidence();emptyProgress.Clear();failures.Clear();skip.Clear();account=key;progressPath=Path.Combine(LocalStorage.DataRoot,"progress-"+key+".json");progress=LoadProgress(progressPath,key);LoadCooking(key);LoadSales(key);if(RecipeBatchPlanner.SwitchPlanting(progress,c.RecipeId,c.FixedCrop?c.FixedSeedId:0,false))SaveProgress(progress);crops=c.Farming?ReadPlantingCrops(progress.RecipeId,progress.FixedSeedId):new CropStock[0];
      SettleReceipt();
     }
     // Account / owner changes invalidate empty-field evidence. Count only AFTER that reset.
@@ -112,7 +112,9 @@ namespace BD2Territory.Runtime
     if(now-lastInput<TimeSpan.FromMilliseconds(c.IntervalMs).Ticks){WarmLocalGrid();s.Reason=lastReason;Publish(s);return;}
     // Finish a damaged node before switching tasks; a partially damaged resource heals after inactivity.
     if(targetNode!=null&&Harvestable(targetNode)&&Enabled(Kind(targetNode),c)){Gather(s,now);Publish(s);return;}targetNode=null;
+    if(SalesBusy()){SalesTick(s,c,now);Publish(s);return;}
     if(CookingTick(s,c,now)){Publish(s);return;}
+    if(SalesTick(s,c,now)){Publish(s);return;}
     if(c.Farming&&crops.Length>0)
     {
      var crop=crops.Single(x=>x.SeedId==RecipeBatchPlanner.Choose(progress,crops));

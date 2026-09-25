@@ -1,4 +1,4 @@
-param([string]$Version='', [string]$ClientManaged='', [switch]$Locked)
+﻿param([string]$Version='', [string]$ClientManaged='', [switch]$Locked)
 $ErrorActionPreference='Stop'
 $declared=([xml](Get-Content (Join-Path $PSScriptRoot 'Directory.Build.props') -Raw)).Project.PropertyGroup.Version
 if(!$Version){$Version=$declared}
@@ -22,17 +22,19 @@ foreach($flavor in @('Portable','Lite')){
     $check=Join-Path $work "$flavor-checks";New-Item -ItemType Directory -Force -Path $check | Out-Null
     function RunCheck([string[]]$Arguments){
         $process=Start-Process -FilePath $exe -ArgumentList $Arguments -WorkingDirectory (Get-Location).Path -WindowStyle Hidden -PassThru
-        if(-not $process.WaitForExit(30000)){throw "Packaged EXE check timed out: $flavor"}
+        $limit=if($Arguments[0] -eq "--check-client"){120000}else{30000}
+        if(-not $process.WaitForExit($limit)){if(-not $process.HasExited){Stop-Process -Id $process.Id -Force};throw "Packaged EXE check timed out: $flavor"}
         if($process.ExitCode -ne 0){Get-ChildItem -LiteralPath $check -Filter failure.txt -Recurse | ForEach-Object {Get-Content -LiteralPath $_.FullName};throw "Packaged EXE check failed: $flavor"}
     }
     $identityPath=Join-Path $check 'identity.json'
     RunCheck @('--identity',('"'+$identityPath+'"'))
     $identity=Get-Content $identityPath -Raw | ConvertFrom-Json
-    if($identity.runtime -ne 'BD2Territory.Runtime22' -or $identity.compatibility -ne 'local-interface-adaptation' -or $identity.defaultIntervalMs -ne 500 -or $identity.defaultNavigation -ne 'astar' -or $identity.defaultUseNavMesh -ne $false){throw 'Embedded identity differs from release'}
+    if($identity.runtime -ne 'BD2Territory.Runtime23' -or $identity.compatibility -ne 'local-interface-adaptation' -or $identity.defaultIntervalMs -ne 500 -or $identity.defaultNavigation -ne 'astar' -or $identity.defaultUseNavMesh -ne $false){throw 'Embedded identity differs from release'}
     RunCheck @('--smoke',('"'+$check+'"'))
     $ui=Get-Content (Join-Path $check 'results.json') -Raw | ConvertFrom-Json
     if($ui.status -ne 'pass' -or $ui.assertions.Count -lt 34){throw 'Packaged UI regression failed'}
     RunCheck @('--smoke-en',('"'+(Join-Path $check 'english-system')+'"'))
+    if(!$identity.automaticSurplusSales -or $identity.defaultAutoSell -or $identity.defaultSellThreshold -ne 9900 -or $identity.minSellThreshold -ne 100 -or $identity.maxSellThreshold -ne 9900){throw 'Surplus sale identity differs from release'}
     if($identity.batchSize -ne 100 -or $identity.ratio -ne '5:3:2' -or $identity.automaticStart){throw 'Recipe or automatic start identity differs'}
     if($ClientManaged){
         $clientReport=Join-Path $check 'client.json'
@@ -52,7 +54,7 @@ foreach($flavor in @('Portable','Lite')){
     $bundle=Join-Path $work $name;New-Item -ItemType Directory -Path $bundle | Out-Null
     Copy-Item -LiteralPath $exe -Destination $exePath
     Copy-Item -LiteralPath $exe -Destination (Join-Path $bundle "$name.exe")
-    foreach($file in @('README.md','README.en.md','LICENSE','THIRD_PARTY_NOTICES.md')){Copy-Item -LiteralPath (Join-Path $PSScriptRoot $file) -Destination $bundle}
+    foreach($file in @('README.md','README.en.md','DISTRIBUTION.md','LICENSE','THIRD_PARTY_NOTICES.md')){Copy-Item -LiteralPath (Join-Path $PSScriptRoot $file) -Destination $bundle}
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'docs') -Destination $bundle -Recurse
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'licenses') -Destination $bundle -Recurse
     Compress-Archive -LiteralPath $bundle -DestinationPath $zipPath -CompressionLevel Optimal

@@ -1,6 +1,8 @@
 # BD2 Territory
 
-> **Disclaimer:** Using this assistant carries risks, including account penalties, bans, game errors or data loss. This project is not affiliated with the game publisher and does not guarantee safe use. Review and follow the game rules; you are responsible for the risks and consequences of using this tool.
+> **Free & open source:** Official releases are provided free by GitHub **MadestSamurai** · Bilibili **MadSamurai**. [Official downloads](https://github.com/MadestSamurai/bd2-territory/releases) · [Source and risk notice](DISTRIBUTION.md#english). Third-party fees do not imply the author’s involvement, endorsement or support.
+>
+> **Risk notice:** This is an unofficial community tool. Use may result in account penalties, bans, game errors or data loss. Follow the game rules and accept responsibility for the risks of use. The MIT license remains unchanged.
 
 English · [简体中文](README.md)
 
@@ -8,9 +10,17 @@ English · [简体中文](README.md)
 
 A standalone Fantasia Territory assistant for BrownDust II on Windows. Automate mining, logging, recipe-based planting and harvesting, with optional cooking and layout preview, purchasing and import.
 
+## Sell surplus stock
+
+Enable **Sell excess automatically**, choose the quantity to keep per item (100–9900, default 9900), then start automation. Only the excess is sold; stock exactly at the threshold is retained. Selling can run on its own.
+
+Only territory materials, produce and meals explicitly listed by the game's territory shop are eligible. Locked items, buildings, decorations, equipment and attribute stones are excluded. Automatic cooking takes priority. Each batch waits for confirmation; the UI shows confirmed sales and territory currency earned. Disabled by default.
+
+If a network interruption leaves the outcome unknown, the tool pauses and preserves the record without resubmitting. Check the game inventory and logs. Thresholds, categories, locks, duplicate replies and current-client interface compilation have been checked; live selling has not been exercised for this release.
+
 ## Download
 
-Current version: **0.3.8-beta.1**. One application includes Simplified Chinese and English. Start with a small planting budget and cooking batch when evaluating this beta.
+Current version: **0.3.9-beta.1**. One application includes Simplified Chinese and English. Start with a small planting budget and cooking batch when evaluating this beta.
 
 | Edition | Runtime | Recommended for |
 | --- | --- | --- |
@@ -87,7 +97,7 @@ Requires Windows, PowerShell and .NET 8 SDK. From this repository root:
 .\package.ps1 -Locked
 ```
 
-Packages go to `dist/v0.3.8-beta.1/`. [Development](docs/DEVELOPMENT.md) · [Localization](docs/LOCALIZATION.md) · [Publication style](docs/PUBLICATION_STYLE.md) · [Release notes](docs/RELEASE_NOTES.md)
+Packages go to `dist/v0.3.9-beta.1/`. [Development](docs/DEVELOPMENT.md) · [Localization](docs/LOCALIZATION.md) · [Publication style](docs/PUBLICATION_STYLE.md) · [Release notes](docs/RELEASE_NOTES.md)
 
 ## License
 

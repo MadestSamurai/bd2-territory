@@ -1,5 +1,10 @@
 namespace BD2Territory.Desktop;
 static class UiLabels { public static readonly Dictionary<string,string> All=new(){
+{"SalesTitle","库存余量售卖"},
+{"SalesEnabled","自动售卖超出部分"},
+{"SalesRetain","每种物品保留"},
+{"SalesHelp","保留 100–9900 个，默认 9900。只卖超出部分；限领地可售材料、采集／种植产物及料理。锁定物品不卖，建筑装饰、装备和属性石不在范围内。自动料理优先。"},
+
 {"Ui1","BD2 领地 · 布局工具"},
 {"Ui2","领地布局"},
 {"Ui3","选择实用布局或载入文件，检查占地与总费用后购买并导入。优先复用并移动同类设施，只补买不足部分，其他设施保留。"},
@@ -67,5 +72,5 @@ static class UiLabels { public static readonly Dictionary<string,string> All=new
 {"NavMeshLabel","使用游戏 NavMesh 寻路（可选）"},
 {"NavMeshHint","默认关闭：使用 A* 网格计算绕障，按方向移动。关闭后立即改走 A*；开启后从下一次移动生效。"},
 {"PlantingModeLabel","种植方式"},{"RecipeModeLabel","按料理配比种植"},{"FixedModeLabel","固定种类作物"},{"FixedSeedLabel","固定种植的作物"},{"FixedCropHintLabel","连接后选择作物。每批同种 100 个，持续种植所选作物。"},{"RecipeLabel","目标料理"},
-{"CookingLabel","自动制作所选料理"},{"CookingBatchLabel","每批最多"},{"CookingHint","消耗已有原料，每批 1–1000 份；默认关闭，不自动出售。原料不足时继续采集和种植。"},
+{"CookingLabel","自动制作所选料理"},{"CookingBatchLabel","每批最多"},{"CookingHint","消耗已有原料，每批 1–1000 份；默认关闭。售卖需另行开启。原料不足时继续采集和种植。"},
 };}

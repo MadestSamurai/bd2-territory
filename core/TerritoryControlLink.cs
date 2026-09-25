@@ -18,7 +18,7 @@ public sealed class TerritoryControlLink:IDisposable
  public void Configure(TerritorySettings s)
  {
   if(!s.ValidSettings())throw new ArgumentException("操作间隔应为 100–60000 毫秒，播种预算不能为负。");
-  lock(sync){command.FixedCrop=s.FixedCrop;command.FixedSeedId=s.FixedSeedId;command.Cooking=s.Cooking;command.CookingBatch=s.CookingBatch;command.RecipeId=s.RecipeId;command.Logging=s.Logging;command.Mining=s.Mining;command.Farming=s.Farming;command.DashRecovery=s.DashRecovery;command.UseVehicle=s.UseVehicle;command.UseNavMesh=s.UseNavMesh;command.IntervalMs=s.IntervalMs;command.PlantingBudget=s.PlantingBudget;TerritoryJson.Write(Path.Combine(root,"settings.json"),s);Write();}
+  lock(sync){command.AutoSell=s.AutoSell;command.SellThreshold=s.SellThreshold;command.FixedCrop=s.FixedCrop;command.FixedSeedId=s.FixedSeedId;command.Cooking=s.Cooking;command.CookingBatch=s.CookingBatch;command.RecipeId=s.RecipeId;command.Logging=s.Logging;command.Mining=s.Mining;command.Farming=s.Farming;command.DashRecovery=s.DashRecovery;command.UseVehicle=s.UseVehicle;command.UseNavMesh=s.UseNavMesh;command.IntervalMs=s.IntervalMs;command.PlantingBudget=s.PlantingBudget;TerritoryJson.Write(Path.Combine(root,"settings.json"),s);Write();}
  }
  public void Start(int pid,string layoutToken=""){lock(sync){if(disposed)throw new ObjectDisposedException(nameof(TerritoryControlLink));command.LayoutToken=layoutToken;command.OwnerId=Guid.NewGuid().ToString("N");command.ProcessId=pid;command.Enabled=true;try{Write();}catch{command.Enabled=false;throw;}}}
  public void Stop(){lock(sync){command.Enabled=false;Write();}}

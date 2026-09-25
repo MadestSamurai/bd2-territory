@@ -30,7 +30,7 @@ public static class HookCompiler
         foreach(var file in Directory.EnumerateFiles(managed,"*.dll").OrderBy(x=>x,StringComparer.Ordinal))
         {try{refs.Add(MetadataReference.CreateFromFile(file));}catch(BadImageFormatException){}}
         refs.Add(MetadataReference.CreateFromImage(Resource("BD2Territory.Harmony.dll")));
-        var compilation=CSharpCompilation.Create("BD2Territory.Runtime22."+ToolFingerprint.Substring(0,16),sources,refs,new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,optimizationLevel:OptimizationLevel.Release,platform:Platform.X64,deterministic:true));
+        var compilation=CSharpCompilation.Create("BD2Territory.Runtime23."+ToolFingerprint.Substring(0,16),sources,refs,new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,optimizationLevel:OptimizationLevel.Release,platform:Platform.X64,deterministic:true));
         using var stream=new MemoryStream();
         var emit=compilation.Emit(stream,manifestResources:new[]{new ResourceDescription("BD2Territory.Harmony.dll",()=>new MemoryStream(Resource("BD2Territory.Harmony.dll")),true)});
         if(!emit.Success)throw new InvalidOperationException("当前客户端接口无法编译，尚未注入。\n"+string.Join("\n",emit.Diagnostics.Where(d=>d.Severity==DiagnosticSeverity.Error).Take(30)));
@@ -102,7 +102,7 @@ public static class HookCompiler
     }
     public static void ValidateObservers(MetadataIndex index,ResolvedBindings r)
     {
-        foreach(var response in new[]{"LifeWorldObjectGatheringResponse","LifeSeedingResponse","LifeWorldObjectPlaceSaveResponse","LifeWorldObjectPositionSaveResponse","LifeCookingResponse"})
+        foreach(var response in new[]{"LifeWorldObjectGatheringResponse","LifeSeedingResponse","LifeWorldObjectPlaceSaveResponse","LifeWorldObjectPositionSaveResponse","LifeCookingResponse","LifeShopSellResponse"})
         {
             var count=index.Types.SelectMany(t=>t.Methods).Count(m=>m.HasBody && m.ReturnType.FullName=="System.Boolean" && m.Parameters.Select(p=>p.ParameterType.FullName).SequenceEqual(new[]{"System.Byte[]","System.Int32","System.Int32"}) && m.Body.Instructions.Any(i=>i.Operand is MethodReference call && call.DeclaringType.FullName=="Proto.Net."+response && call.Name=="get_Parser"));
             if(count<1)throw new InvalidOperationException("缺少原生回执入口："+response);
@@ -126,6 +126,7 @@ public static class HookCompiler
             var m=BindingResolver.Api(r,api);var method=m is MethodDefinition;
             return "{"+Q(api.Role)+",new[]{"+Q(m.DeclaringType.FullName.Replace('/','+'))+","+Q(method?m.MetadataToken.ToInt32().ToString():m.Name)+","+Q(method?"method":"member")+"}}";
         });
+        apiEntries=apiEntries.Concat(SalesBindings.Resolve(r).Select(pair=>"{"+Q(pair.Key)+",new[]{"+Q(pair.Value.DeclaringType.FullName.Replace('/','+'))+","+Q(pair.Value.MetadataToken.ToInt32().ToString())+","+Q("method")+"}}"));
         string Dictionary(Dictionary<string,string> d)=>"new System.Collections.Generic.Dictionary<string,string>{"+string.Join(",",d.Select(x=>"{"+Q(x.Key)+","+Q(x.Value)+"}"))+"}";
         return "namespace BD2Territory.Runtime { internal static class TerritoryClient { internal const string NormalStepFieldName="+Q(NormalStepField(r).Name)+"; internal const string CompiledMvid="+Q(r.Report.ClientMvid)+"; internal static readonly System.Collections.Generic.Dictionary<string,string> TypeNames="+Dictionary(types)+"; internal static readonly System.Collections.Generic.Dictionary<string,string> MemberNames="+Dictionary(names)+"; internal static readonly System.Collections.Generic.Dictionary<string,string[]> Apis=new System.Collections.Generic.Dictionary<string,string[]>{"+string.Join(",",apiEntries)+"}; }}";
     }

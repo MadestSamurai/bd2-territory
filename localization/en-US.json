@@ -222,7 +222,6 @@
   "工具动作超过 45 秒无命中或收获回执，已暂停；请检查角色和网络状态": "No gathering hit or response for 45 seconds. Paused; check the character and network.",
   "自动制作所选料理": "Automatically cook selected dish",
   "每批最多": "Batch limit",
-  "消耗已有原料，每批 1–1000 份；默认关闭，不自动出售。原料不足时继续采集和种植。": "Uses your ingredients, 1–1000 dishes per batch. Off by default. Does not sell items. Gathering and farming continue when ingredients run out.",
   "已确认制作 ": "Confirmed dishes: ",
   " 份": "",
   " · 等待服务器确认": " · Awaiting server confirmation",
@@ -270,5 +269,19 @@
   "批量预览出现未知空田状态，已停止付款": "Batch preview has an unknown field state. Payment stopped.",
   "播种目标已消失": "The planting target is no longer available.",
   "农田状态暂不可读取：": "Field status is temporarily unavailable: ",
-  "等待领地水域与桥梁数据": "Waiting for territory water and bridge data"
+  "等待领地水域与桥梁数据": "Waiting for territory water and bridge data",
+  "库存余量售卖": "Sell surplus stock",
+  "自动售卖超出部分": "Sell excess automatically",
+  "每种物品保留": "Keep per item",
+  "保留 100–9900 个，默认 9900。只卖超出部分；限领地可售材料、采集／种植产物及料理。锁定物品不卖，建筑装饰、装备和属性石不在范围内。自动料理优先。": "Keep 100–9900 of each item (default 9900). Only excess sellable territory materials, produce and meals are sold. Locked items, decorations, equipment and attribute stones are excluded. Cooking takes priority.",
+  "售卖保留数量必须是 100–9900 的整数。": "Stock to retain must be an integer from 100 to 9900.",
+  "已确认售卖 ": "Confirmed sold: ",
+  " 个，获得领地币 ": " items; territory currency earned: ",
+  "等待领地售卖确认": "Waiting for the territory sale to be confirmed",
+  "正在售卖超过保留数量的领地物品": "Selling territory stock above the retained quantity",
+  "售卖结果未知，已保留记录；不会重复卖出，请核对库存和领地币": "Sale outcome is unknown. The record is preserved and will not be resubmitted. Check your stock and territory currency.",
+  "售卖确认期间账号发生变化，已保留记录": "Account changed during sale confirmation. The record is preserved.",
+  "等待领地库存同步": "Waiting for territory inventory to synchronize",
+  "等待领地售卖表同步": "Waiting for territory sale data to synchronize",
+  "消耗已有原料，每批 1–1000 份；默认关闭。售卖需另行开启。原料不足时继续采集和种植。": "Uses owned ingredients; 1–1000 per batch. Off by default. Selling is enabled separately. Gathering and farming continue when ingredients run out."
 }

@@ -39,6 +39,7 @@ namespace BD2Territory.Runtime
    bool network=(bool)net.GetType().GetProperty("Waiting",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(net,null)||Convert.ToInt32(TerritoryBindings.Read("Network.QueuedHarvest",null))>0;
    bool planting=progress!=null&&!string.IsNullOrEmpty((string)progress.GetType().GetProperty("PendingToken").GetValue(progress,null));
    var vehicle=t.GetField("vehiclePending",BindingFlags.Instance|BindingFlags.NonPublic);loading|=vehicle!=null&&(bool)vehicle.GetValue(old);
+   var sales=t.GetMethod("SalesBusy",BindingFlags.Instance|BindingFlags.NonPublic);loading|=sales!=null&&(bool)sales.Invoke(old,null);
    var cook=t.GetMethod("CookingBusy",BindingFlags.Instance|BindingFlags.NonPublic);loading|=cook!=null&&(bool)cook.Invoke(old,null);
    var layout=t.GetMethod("LayoutBusy",BindingFlags.Instance|BindingFlags.NonPublic);loading|=layout!=null&&(bool)layout.Invoke(old,null);
    return RuntimeHandoffRules.CanStop(ControlActive(),(bool)Field(old,"ownsMove"),busy,loading,network,planting);

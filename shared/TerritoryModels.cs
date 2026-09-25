@@ -3,7 +3,7 @@ namespace BD2Territory
 {
  public static class TerritoryIdentity
  {
-  public const string RuntimeName="BD2Territory.Runtime22";
+  public const string RuntimeName="BD2Territory.Runtime23";
   public static string DataRoot=>System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"BD2Territory");
   public static bool IsGameProcessName(string name)=>string.Equals(name,"BrownDust II",StringComparison.OrdinalIgnoreCase)||string.Equals(name,"BrownDust II.exe",StringComparison.OrdinalIgnoreCase);
  }
@@ -14,9 +14,10 @@ namespace BD2Territory
   public bool UseNavMesh{get;set;}=false;
   public bool DashRecovery{get;set;}=true;public bool UseVehicle{get;set;}=true;
   public bool FixedCrop{get;set;}=false;public int FixedSeedId{get;set;}=0;
+  public bool AutoSell{get;set;}=false;public int SellThreshold{get;set;}=9900;
   public int RecipeId{get;set;}=3;public bool Cooking{get;set;}=false;public int CookingBatch{get;set;}=100;
   public int IntervalMs{get;set;}=500;public long PlantingBudget{get;set;}=1400;
-  public bool ValidSettings()=>FixedSeedId>=0&&CookingBatch>=1&&CookingBatch<=1000&&RecipeId>0&&IntervalMs>=100&&IntervalMs<=60000&&PlantingBudget>=0&&PlantingBudget<=10000000;
+  public bool ValidSettings()=>SurplusSales.ValidThreshold(SellThreshold)&&FixedSeedId>=0&&CookingBatch>=1&&CookingBatch<=1000&&RecipeId>0&&IntervalMs>=100&&IntervalMs<=60000&&PlantingBudget>=0&&PlantingBudget<=10000000;
  }
  public sealed class TerritoryControl:TerritorySettings
  {
@@ -38,6 +39,7 @@ namespace BD2Territory
   public int GatherReplies{get;set;}public int ReceivedItems{get;set;}public long Spent{get;set;}public int BatchSeedId{get;set;}public int BatchPlanted{get;set;}public int CompletedBatches{get;set;}
   public RecipeOption[] Seeds{get;set;}=new RecipeOption[0];public int ActiveFixedSeedId{get;set;}
   public RecipeOption[] Recipes{get;set;}=new RecipeOption[0];public int ActiveRecipeId{get;set;}
+  public long SoldItems{get;set;}public long SaleCurrency{get;set;}public string SalesState{get;set;}="";
   public int Cookable{get;set;}public long Cooked{get;set;}public string CookingState{get;set;}="";
   public CropStock[] Crops{get;set;}=new CropStock[0];
  }
