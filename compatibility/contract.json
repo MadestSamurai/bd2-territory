@@ -796,36 +796,6 @@
       ]
     },
     {
-      "Name": "FieldEvent.Life.LifeNPCViewController",
-      "Shape": "7574560555BB5EEE11297B651FFE45130BEA7680AB3427D251633EB306DD28DE",
-      "Anchors": [
-        "C70C4C93581EC86E05880D709E733166953BBC08723E9EE26AF3093FA5929DA7",
-        "46FB41F2C5440AE1F1EA2070CC848ED8104D5A137C7AFF2DBC93B8EE1122925F",
-        "63BE126B1C4B0225AA5ADCAF871643438354D4839FEC26B53947012A214A1533",
-        "B2C8826D6E119598849D2936297486E64E7AD5411A5B817CF136AFC5B17421F7",
-        "4ED9BCDADA282C989D9B93211A909A75F4F563E1B916EBCE9E8DE79CC6D85FD4",
-        "7E4B8C425748EC3308A502E0C8C5525B17F2B13724E948A6176453562E917DDE",
-        "F24DAF2C9960657D0D9DB174D449A77C617EC4C2EDB8202C41220C28BAD1FC2F",
-        "B3DBC7ED799720289D6BAD5CCD13C6B31AEB7C1971C7B02399D64909D8F379D5"
-      ],
-      "Members": [
-        {
-          "Name": "GetAllNPCs",
-          "Signature": "M|False|0|System.Collections.Generic.IReadOnlyDictionary\u00602\u003CSystem.Int32,FieldEvent.Context.Life.NPC.LifeNPCAIController\u003E|",
-          "Body": "A98D4F630AACF46192525DF09D9FCC90B89B978F9C572E0147E9B9129ED911F9",
-          "Uses": []
-        },
-        {
-          "Name": "GetAllWorkerNPCs",
-          "Signature": "M|False|0|System.Collections.Generic.IReadOnlyDictionary\u00602\u003CSystem.Int32,FieldEvent.Context.Life.NPC.LifeNPCAIController\u003E|",
-          "Body": "A98D4F630AACF46192525DF09D9FCC90B89B978F9C572E0147E9B9129ED911F9",
-          "Uses": [
-            "53E109BF0C17D4DB8AA220A84B5F01375A050BD8DF038988235533D66955BDA1:23"
-          ]
-        }
-      ]
-    },
-    {
       "Name": "FieldEvent.Life.LifePlayerToolEquipmentController",
       "Shape": "D75D4AC62E996C83B019BA41B38BECD820C161EBBBA3BA3F256A8FBB9F1F78B3",
       "Anchors": [
@@ -7651,20 +7621,6 @@
       "Signature": "M|False|0|System.Void|"
     },
     {
-      "Role": "Npc.Citizens",
-      "Type": "FieldEvent.Life.LifeNPCViewController",
-      "Member": "GetAllNPCs",
-      "Arity": 0,
-      "Signature": "M|False|0|System.Collections.Generic.IReadOnlyDictionary\u00602\u003CSystem.Int32,FieldEvent.Context.Life.NPC.LifeNPCAIController\u003E|"
-    },
-    {
-      "Role": "Npc.Workers",
-      "Type": "FieldEvent.Life.LifeNPCViewController",
-      "Member": "GetAllWorkerNPCs",
-      "Arity": 0,
-      "Signature": "M|False|0|System.Collections.Generic.IReadOnlyDictionary\u00602\u003CSystem.Int32,FieldEvent.Context.Life.NPC.LifeNPCAIController\u003E|"
-    },
-    {
       "Role": "Gather.Near",
       "Type": "gamfs.Life.LifeManager",
       "Member": "GetNearestDetectedGatheringObject",
@@ -7923,7 +7879,6 @@
     "FunctionKind": "\u1F6B\u1F6B\u1F68\u1F65\u1F69\u1F6F\u1F66\u1F63\u1F65\u1F6D\u1F62",
     "MoveKind": "MoveController/\u1F6F\u1F65\u1F6E\u1F62\u1F6F\u1F68\u1F6F\u1F67\u1F6C\u1F69\u1F6F",
     "FarmGroup": "\u1F67\u1F6E\u1F6A\u1F6F\u1F6D\u1F6C\u1F67\u1F60\u1F6D\u1F63\u1F61",
-    "NpcManager": "FieldEvent.Life.LifeNPCViewController",
     "CurrencyKind": "\u1F6A\u1F61\u1F62\u1F66\u1F62\u1F61\u1F6F\u1F69\u1F6B\u1F64\u1F65"
   }
 }

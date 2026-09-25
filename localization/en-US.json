@@ -1,4 +1,6 @@
 {
+  "预测存在接触，按游戏正常移动验证通行": "Predicted contact; checking passage through normal game movement",
+  "角色移动控制器无法唯一确认，尚未注入": "Cannot uniquely identify the game movement controller; nothing was injected",
   "回调 IL 不完整": "Incomplete callback IL",
   "游戏进程已变化，请重新连接。": "The game process changed. Reconnect.",
   "控制文件过大": "Control file is too large",

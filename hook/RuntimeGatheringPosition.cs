@@ -21,7 +21,7 @@ namespace BD2Territory.Runtime
   private bool GatherStandReached(Component target,Vector3 point,bool destinationReached,bool detected)
   {
    // A recovery route must actually reach its new stand, even if the old detector still includes us.
-   return (destinationReached||detected&&!gatheringReposition)&&CanGatherAt(target,point)&&StandClear(point);
+   return (destinationReached||detected&&!gatheringReposition)&&CanGatherAt(target,point);
   }
  }
 }

@@ -1,3 +1,95 @@
+# BD2 Territory v0.3.6-beta.1
+
+## 简体中文
+
+### 更新内容
+
+- 修复矿点附近目标站位落入角色碰撞范围的问题；确认到不了的站位会换面重试。
+- 修复领地地形台阶被误判为障碍：按连续台阶高度规划，区分上下层缓存，并读取游戏保存的正常跨阶高度。
+- 区分行走时的跨阶空间和采集时的停止站位，保留 NPC／工人的原生碰撞过滤规则。
+
+### 下载
+
+| 版本 | 运行环境 | 建议 |
+| --- | --- | --- |
+| Portable | 自带 .NET | 大多数用户 |
+| Lite | .NET Desktop Runtime 8 x64 | 已安装桌面运行库 |
+
+两版功能相同，内置中英切换。EXE 可独立运行；ZIP 包含双语说明和许可证，下载校验见 `SHA256SUMS.txt`。
+
+### 升级
+
+暂停并关闭旧工具，打开新版，点击「连接／更新组件」，连接完成后再开始。保留已有设置及种植进度。
+
+## English
+
+### Changes
+
+- Fixes gathering destinations that overlap the player's collision body near ore. An unreachable final stand is retired before trying another side.
+- Fixes false obstacles on built-in terrain stairs by following consecutive tread heights, separating floor-level caches and reading the game's saved normal step height.
+- Separates stepping clearance while walking from final gathering clearance, retaining native collision filtering for NPCs and workers.
+
+### Downloads
+
+| Build | Runtime | Recommended for |
+| --- | --- | --- |
+| Portable | Includes .NET | Most users |
+| Lite | .NET Desktop Runtime 8 x64 | Users with the desktop runtime installed |
+
+Both builds have the same features and include Chinese/English switching. Each EXE runs on its own; ZIPs include bilingual documentation and licenses. Verify downloads with `SHA256SUMS.txt`.
+
+### Upgrade
+
+Pause and close the old tool, open the new build and select **Connect / update component** before starting. Existing settings and planting progress are retained.
+
+---
+
+# BD2 Territory v0.3.5-beta.1
+
+## 简体中文
+
+### 更新内容
+
+- 通行预测改用角色实际的碰撞体、碰撞过滤、台阶高度及坡度规则，修正可行走摆设被误判为障碍。
+- 移除 NPC 和工人的额外虚拟占位，避免挡住本来可以通行或采集的位置。
+- 预测失败时增加有限的正常移动验证；连续 3 秒无推进才暂记障碍，修复重算禁行区把角色困在原地的问题。
+
+### 下载
+
+| 版本 | 运行环境 | 建议 |
+| --- | --- | --- |
+| Portable | 自带 .NET | 大多数用户 |
+| Lite | .NET Desktop Runtime 8 x64 | 已安装桌面运行库 |
+
+两版功能相同，内置中英切换。EXE 可独立运行；ZIP 包含双语说明和许可证，下载校验见 `SHA256SUMS.txt`。
+
+### 升级
+
+暂停并关闭旧工具，打开新版，点击「连接／更新组件」，连接完成后再开始。保留已有设置及种植进度。
+
+## English
+
+### Changes
+
+- Predicts traversal using the character’s actual collider, collision filters, step height and slope rules, reducing false obstacles on walkable decorations.
+- Removes synthetic NPC and worker footprints that could block otherwise valid movement or gathering positions.
+- Adds bounded ordinary-movement checks when prediction fails. Only 3 seconds of observed stalling creates a temporary exclusion; recovery can leave an overlapping exclusion instead of trapping itself.
+
+### Downloads
+
+| Build | Runtime | Recommended for |
+| --- | --- | --- |
+| Portable | Includes .NET | Most users |
+| Lite | .NET Desktop Runtime 8 x64 | Users with the desktop runtime installed |
+
+Both builds have the same features and include Chinese/English switching. Each EXE runs on its own; ZIPs include bilingual documentation and licenses. Verify downloads with `SHA256SUMS.txt`.
+
+### Upgrade
+
+Pause and close the old tool, open the new build and select **Connect / update component** before starting. Existing settings and planting progress are retained.
+
+---
+
 # BD2 Territory v0.3.4-beta.1
 
 ## 简体中文

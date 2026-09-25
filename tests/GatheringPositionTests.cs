@@ -34,7 +34,7 @@ namespace BD2Territory.Runtime
    var neighbor=new LifeGatheringObject{Id=702,HitBox=tree.HitBox};Check(CanGatherAt(neighbor,near),"failed stance is scoped to target");
    Check(!CanGatherAt(tree,near),"switching back cannot forget the failed stance");
    gatheringStands.Succeeded(tree.Id);Check(CanGatherAt(tree,near),"real target hit resets stance memory");
-   standClear=false;Check(!GatherStandReached(tree,near,true,true),"NPC or physical occupancy still blocks arrival");standClear=true;
+   standClear=false;Check(GatherStandReached(tree,near,true,true),"actual game detection and reach override a speculative occupancy rejection");standClear=true;
    inRange=false;Check(!CanGatherAt(tree,near),"trunk clearance never bypasses native detection range");inRange=true;
    tree.HitBox.enabled=false;Check(!CanGatherAt(tree,near),"missing hit surface cannot become a successful arrival");tree.HitBox.enabled=true;
    tree.Function=2;Check(CanGatherAt(tree,edge),"mining keeps its own range, not the narrow tree rule");

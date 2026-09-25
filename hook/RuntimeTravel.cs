@@ -61,12 +61,12 @@ namespace BD2Territory.Runtime
     if(localMoving||!c.UseNavMesh)
     {
      Vector3 end,landing;
-     if(!GroundPoint(p,out end)||!LocalEdge(Point(from),Point(end))||!GroundPoint(from+direction*1.2f,out landing))continue;
+     if(!GroundPoint(p,out end)||!StaticLocalEdge(Point(from),Point(end),false,false)||!GroundPoint(from+direction*1.2f,out landing))continue;
      cost=FlatDistance(landing,finalDestination);
     }
     else
     {
-     if(!NavMesh.SamplePosition(p,out hit,.2f,filter)||Math.Abs(hit.position.y-from.y)>.4f||!StandClear(hit.position+Vector3.up*RootLift)||!NpcPathClear(from,hit.position+Vector3.up*RootLift)||Obstacle(from,hit.position+Vector3.up*RootLift)!=null||NavMesh.Raycast(from,hit.position,out hit,filter))continue;
+     if(!NavMesh.SamplePosition(p,out hit,.2f,filter)||Math.Abs(hit.position.y-from.y)>.4f||!StandClear(hit.position+Vector3.up*RootLift)||Obstacle(from,hit.position+Vector3.up*RootLift)!=null||NavMesh.Raycast(from,hit.position,out hit,filter))continue;
      var landing=from+direction*1.2f;if(!NavMesh.SamplePosition(landing,out hit,.2f,filter)||!StandClear(hit.position+Vector3.up*RootLift))continue;
      var path=new NavMeshPath();if(!NavMesh.CalculatePath(hit.position,finalDestination,filter,path)||path.status!=NavMeshPathStatus.PathComplete)continue;
      cost=PathLength(path);if(cost>navigation.BestRemaining+8)continue;
@@ -95,7 +95,7 @@ namespace BD2Territory.Runtime
   {
    s.Reason="短距冲刺脱困";var from=player.transform.position;double distance=Vector3.Distance(from,escapeStart);
    bool active=dashManager!=null&&(bool)B.InvokeOn("Dash.Active",dashManager);
-   if(!travel.FinishDash(now,distance,active,c.DashRecovery)&&Obstacle(from,from+escapeDirection*.8f)==null&&NpcPathClear(from,from+escapeDirection*.8f))return;
+   if(!travel.FinishDash(now,distance,active,c.DashRecovery)&&Obstacle(from,from+escapeDirection*.8f)==null)return;
    StopEscape();LocalStorage.Log("冲刺结束，按实际位置重算 target="+navigation.Target+" moved="+distance.ToString("F2")+" at="+from);
    ResumeRouteAfterDash(s,now,c);
   }

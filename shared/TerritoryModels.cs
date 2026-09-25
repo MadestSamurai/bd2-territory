@@ -3,7 +3,7 @@ namespace BD2Territory
 {
  public static class TerritoryIdentity
  {
-  public const string RuntimeName="BD2Territory.Runtime18";
+  public const string RuntimeName="BD2Territory.Runtime20";
   public static string DataRoot=>System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"BD2Territory");
   public static bool IsGameProcessName(string name)=>string.Equals(name,"BrownDust II",StringComparison.OrdinalIgnoreCase)||string.Equals(name,"BrownDust II.exe",StringComparison.OrdinalIgnoreCase);
  }

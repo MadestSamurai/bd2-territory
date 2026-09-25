@@ -29,7 +29,7 @@ public static class HookCompiler
         foreach(var file in Directory.EnumerateFiles(managed,"*.dll").OrderBy(x=>x,StringComparer.Ordinal))
         {try{refs.Add(MetadataReference.CreateFromFile(file));}catch(BadImageFormatException){}}
         refs.Add(MetadataReference.CreateFromImage(Resource("BD2Territory.Harmony.dll")));
-        var compilation=CSharpCompilation.Create("BD2Territory.Runtime18."+ToolFingerprint.Substring(0,16),sources,refs,new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,optimizationLevel:OptimizationLevel.Release,platform:Platform.X64,deterministic:true));
+        var compilation=CSharpCompilation.Create("BD2Territory.Runtime20."+ToolFingerprint.Substring(0,16),sources,refs,new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,optimizationLevel:OptimizationLevel.Release,platform:Platform.X64,deterministic:true));
         using var stream=new MemoryStream();
         var emit=compilation.Emit(stream,manifestResources:new[]{new ResourceDescription("BD2Territory.Harmony.dll",()=>new MemoryStream(Resource("BD2Territory.Harmony.dll")),true)});
         if(!emit.Success)throw new InvalidOperationException("当前客户端接口无法编译，尚未注入。\n"+string.Join("\n",emit.Diagnostics.Where(d=>d.Severity==DiagnosticSeverity.Error).Take(30)));
@@ -46,8 +46,25 @@ public static class HookCompiler
         }
     }
 
+    private static FieldDefinition NormalStepField(ResolvedBindings r)
+    {
+        var type=r.Types["PlayerMoveController"];
+        var fields=new List<FieldDefinition>();
+        foreach(var method in type.Methods.Where(m=>m.HasBody))
+        {
+            var il=method.Body.Instructions.Where(i=>i.OpCode.Code!=Mono.Cecil.Cil.Code.Nop).ToArray();
+            for(int i=1;i<il.Length;i++)
+            if(il[i].OpCode.Code==Mono.Cecil.Cil.Code.Stfld&&il[i].Operand is FieldReference field&&
+               il[i-1].Operand is MethodReference read&&read.DeclaringType.FullName=="UnityEngine.CharacterController"&&read.Name=="get_stepOffset"&&
+               field.DeclaringType.FullName==type.FullName&&field.FieldType.FullName=="System.Single")fields.Add(field.Resolve());
+        }
+        var matches=fields.GroupBy(f=>f.FullName).Select(g=>g.First()).ToArray();
+        if(matches.Length!=1)throw new InvalidOperationException("Cannot identify the game's saved step height; nothing was injected.");
+        return matches[0];
+    }
     private static void ValidateRuntimeEntryPoints(ResolvedBindings r)
     {
+        NormalStepField(r);
         var eventApi=r.Contract.Apis.Single(a=>a.Role=="Tool.Event");var handler=(MethodDefinition)BindingResolver.Api(r,eventApi);
         var casts=handler.Body.Instructions.Where(i=>i.OpCode.Code==Mono.Cecil.Cil.Code.Isinst).Select(i=>((TypeReference)i.Operand).Resolve()).ToArray();
         if(casts.Length!=1||!casts[0].Methods.Any(m=>m.IsConstructor&&!m.IsStatic&&m.Parameters.Select(p=>p.ParameterType.FullName).SequenceEqual(new[]{"System.Int32","System.Int32"})))
@@ -55,6 +72,10 @@ public static class HookCompiler
         var face=(MethodDefinition)BindingResolver.Api(r,r.Contract.Apis.Single(a=>a.Role=="Player.Face"));
         if(face.IsStatic||face.ReturnType.FullName!="System.Void"||!face.HasBody||!face.Body.Instructions.Select((i,n)=>new{Instruction=i,Index=n}).Any(x=>x.Instruction.Operand is MethodReference m&&m.Name=="UpdateRotatePlayer"&&x.Index>0&&face.Body.Instructions[x.Index-1].OpCode.Code==Mono.Cecil.Cil.Code.Ldc_I4_1))
             throw new InvalidOperationException("角色模型转向入口缺少强制刷新，尚未注入");
+        // Movement prediction must use the controller actually held by MoveController,
+        // not an arbitrary component found on the visible avatar.
+        if(r.Types["MoveController"].Fields.Count(f=>!f.IsStatic&&f.FieldType.FullName=="UnityEngine.CharacterController")!=1)
+            throw new InvalidOperationException("角色移动控制器无法唯一确认，尚未注入");
         var control=(MethodDefinition)BindingResolver.Api(r,r.Contract.Apis.Single(a=>a.Role=="Player.ChangeMoveType"));
         var moveType=(PropertyDefinition)BindingResolver.Api(r,r.Contract.Apis.Single(a=>a.Role=="Player.MoveType"));
         var controlCalls=control.Body.Instructions.Select(i=>i.Operand).OfType<MethodReference>().ToArray();
@@ -95,7 +116,7 @@ public static class HookCompiler
             return "{"+Q(api.Role)+",new[]{"+Q(m.DeclaringType.FullName.Replace('/','+'))+","+Q(method?m.MetadataToken.ToInt32().ToString():m.Name)+","+Q(method?"method":"member")+"}}";
         });
         string Dictionary(Dictionary<string,string> d)=>"new System.Collections.Generic.Dictionary<string,string>{"+string.Join(",",d.Select(x=>"{"+Q(x.Key)+","+Q(x.Value)+"}"))+"}";
-        return "namespace BD2Territory.Runtime { internal static class TerritoryClient { internal const string CompiledMvid="+Q(r.Report.ClientMvid)+"; internal static readonly System.Collections.Generic.Dictionary<string,string> TypeNames="+Dictionary(types)+"; internal static readonly System.Collections.Generic.Dictionary<string,string> MemberNames="+Dictionary(names)+"; internal static readonly System.Collections.Generic.Dictionary<string,string[]> Apis=new System.Collections.Generic.Dictionary<string,string[]>{"+string.Join(",",apiEntries)+"}; }}";
+        return "namespace BD2Territory.Runtime { internal static class TerritoryClient { internal const string NormalStepFieldName="+Q(NormalStepField(r).Name)+"; internal const string CompiledMvid="+Q(r.Report.ClientMvid)+"; internal static readonly System.Collections.Generic.Dictionary<string,string> TypeNames="+Dictionary(types)+"; internal static readonly System.Collections.Generic.Dictionary<string,string> MemberNames="+Dictionary(names)+"; internal static readonly System.Collections.Generic.Dictionary<string,string[]> Apis=new System.Collections.Generic.Dictionary<string,string[]>{"+string.Join(",",apiEntries)+"}; }}";
     }
 }
 public sealed class CompatibilityException : Exception

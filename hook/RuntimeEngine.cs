@@ -98,7 +98,6 @@ namespace BD2Territory.Runtime
     if(popupProgress.WaitForSettle(now)){StopMove();s.Reason="等待领地升级／解锁界面切换完成";Publish(s);return;}
     if(vehicleRequest.TimedOut(now))throw new InvalidOperationException("载具加载超过 8 秒，已暂停；等待游戏完成加载后可重新开始。");
     if(AwaitGathering(s,now,pending)){Publish(s);return;}
-    if(!RefreshNpcOccupancy()){StopMove();s.Reason="等待领地 NPC 占位信息";Publish(s);return;}
     RefreshLocalCacheContext();
     if(farmStage>0){AdvancePlant(s,now);Publish(s);return;}
     if(progress.PendingToken.Length>0){ReconcilePending();s.Reason="已核对上次播种";Publish(s);return;}
@@ -233,7 +232,7 @@ namespace BD2Territory.Runtime
   private void Plant(TerritorySnapshot s,CropStock crop,long now)
   {
    s.Target=crop.Name+" × 100 · 整批播种";
-   if(!targetFarm.IsPlayerInInteractionRange(player.transform.position)||!NpcStandClear(player.transform.position)){Approach(targetFarm,targetFarm.GetFieldWorldCenter(),s,now,1.0f);return;}
+   if(!targetFarm.IsPlayerInInteractionRange(player.transform.position)){Approach(targetFarm,targetFarm.GetFieldWorldCenter(),s,now,1.0f);return;}
    StopMotion();if(!FootReady(s))return;navigation.Reset();triedDestinations.Clear();B.InvokeOn("Farm.Open",targetFarm);panel=UnityEngine.Object.FindObjectsOfType<LifeFarmingUIPanel>().FirstOrDefault(B.Active);if(panel==null)throw new InvalidOperationException("播种界面未打开");
    // Take ownership immediately, so a failed preview closes the panel instead of leaving manual UI behind.
    farmStage=1;entered=lastInput=now;batchFields=new string[0];plantingPreview.Reset();
@@ -357,7 +356,6 @@ namespace BD2Territory.Runtime
    }
    if(gatheringReposition)
    {Approach(targetNode,targetNode.transform.position,s,now,.7f,gathering.Repositions);return;}
-   if(!NpcStandClear(player.transform.position)){gatheringReposition=true;Approach(targetNode,targetNode.transform.position,s,now,.7f);return;}
    bool detected=Detected(kind).Contains(targetNode)&&CanGatherAt(targetNode,player.transform.position);
    var decision=interaction.Decide(now,detected,Harvestable(targetNode));
    if(decision==InteractionDecision.WaitForDetection){s.Reason="已到位，等待游戏更新采集范围";return;}
@@ -379,25 +377,6 @@ namespace BD2Territory.Runtime
   private NavMeshAgent NavAgent()=>move==null?null:B.Read("Player.NavAgent",move) as NavMeshAgent;
   private static double PathLength(NavMeshPath path)
   {double length=0;var corners=path.corners;for(int i=1;i<corners.Length;i++)length+=Vector3.Distance(corners[i-1],corners[i]);return length;}
-  private float BodyRadius
-  {get{var body=player.GetComponent<CharacterController>();return body==null?.24f:Math.Max(.1f,body.radius*Math.Max(Math.Abs(body.transform.lossyScale.x),Math.Abs(body.transform.lossyScale.z)));}}
-  private bool Blocks(Collider collider,Vector3 root)
-  {
-   if(collider==null||!collider.enabled||collider.isTrigger||collider.transform.IsChildOf(player.transform)||npcBodies.Contains(collider))return false;
-   var own=player.GetComponent<CharacterController>();int layer=own==null?player.gameObject.layer:own.gameObject.layer;
-   if(Physics.GetIgnoreLayerCollision(layer,collider.gameObject.layer)||(own!=null&&Physics.GetIgnoreCollision(own,collider)))return false;
-   Vector3 low,high;float radius;BodyCapsule(root,out low,out high,out radius);
-   return collider.bounds.max.y>low.y-radius+.015f&&collider.bounds.min.y<high.y+radius-.015f;
-  }
-  private Collider Obstacle(Vector3 from,Vector3 to)
-  {
-   var delta=to-from;delta.y=0;if(delta.sqrMagnitude<.0001f)return null;
-   Vector3 low,high;float radius;BodyCapsule(from,out low,out high,out radius);
-   return Physics.CapsuleCastAll(low,high,radius,delta.normalized,delta.magnitude,~0,QueryTriggerInteraction.Ignore)
-    .Where(h=>Blocks(h.collider,from)).OrderBy(h=>h.distance).Select(h=>h.collider).FirstOrDefault();
-  }
-  private bool StandClear(Vector3 p,bool includeNpcs=true)
-  {if(includeNpcs&&!NpcStandClear(p))return false;Vector3 low,high;float radius;BodyCapsule(p,out low,out high,out radius);return !Physics.OverlapCapsule(low,high,radius,~0,QueryTriggerInteraction.Ignore).Any(c=>Blocks(c,p));}
   private bool FindStand(Component target,Vector3 center,float radius,Vector3 from,NavMeshQueryFilter filter,bool retry,out Vector3 chosen,out double best)
   {
    chosen=Vector3.zero;best=double.PositiveInfinity;
@@ -437,20 +416,18 @@ namespace BD2Territory.Runtime
   {
    if(now-lastPathCheck<TimeSpan.FromMilliseconds(300).Ticks)return;lastPathCheck=now;
    var from=player.transform.position;var agent=NavAgent();
-   if(!NpcStandClear(walkDestination+Vector3.up*RootLift)){if(!BeginLocalRoute(walkTarget,s,now,"npc_destination_occupied"))SkipWalkTarget(walkTarget,s,now,"npc_destination_occupied");return;}
-   bool arrived=FlatDistance(from,walkDestination)<=.12f&&Math.Abs(from.y-walkDestination.y)<=.45f&&NpcStandClear(from);
+   if(!StandClear(walkDestination+Vector3.up*RootLift)){if(!BeginLocalRoute(walkTarget,s,now,"destination_obstructed"))SkipWalkTarget(walkTarget,s,now,"destination_obstructed");return;}
+   bool arrived=FlatDistance(from,walkDestination)<=.12f&&Math.Abs(from.y-walkDestination.y)<=.45f&&StandClear(from);
    if(!bypassing)arrived=GatherStandReached(walkTarget,from,arrived,walkTarget is LifeGatheringObject nearby&&Detected(Kind(nearby)).Contains(nearby));
    if(arrived&&bypassing){walkDestination=finalDestination;bypassing=false;B.InvokeOn("Player.StartMove",player);if(!(bool)B.InvokeOn("Player.SetMoveNav",move,walkDestination,null,true)){SkipWalkTarget(walkTarget,s,now,"bypass_resume_failed");return;}arrived=false;}
    var path=new NavMeshPath();bool valid=agent!=null&&agent.isActiveAndEnabled&&agent.isOnNavMesh&&NavMesh.CalculatePath(from,walkDestination,NavFilter(agent),path)&&path.status==NavMeshPathStatus.PathComplete;
    double remaining=valid?PathLength(path):double.PositiveInfinity;
    if(bypassing&&agent!=null){var rest=new NavMeshPath();if(NavMesh.CalculatePath(walkDestination,finalDestination,NavFilter(agent),rest)&&rest.status==NavMeshPathStatus.PathComplete)remaining+=PathLength(rest);else valid=false;}
-   var corners=valid?path.corners:new Vector3[0];Collider obstacle=null;bool npcBlocked=false;
-   if(!arrived&&corners.Length>1){var d=corners[1]-from;d.y=0;var ahead=from+Vector3.ClampMagnitude(d,1.0f);obstacle=Obstacle(from,ahead);npcBlocked=!NpcPathClear(from,ahead);}
-   if(npcBlocked){LocalStorage.Log("NPC 占据行进通路 target="+navigation.Target);CaptureFailure("npc_corridor_occupied");if(!BeginLocalRoute(walkTarget,s,now,"npc_corridor_occupied"))SkipWalkTarget(walkTarget,s,now,"npc_corridor_occupied");return;}
+   var corners=valid?path.corners:new Vector3[0];Collider obstacle=null;
+   if(!arrived&&corners.Length>1){var d=corners[1]-from;d.y=0;var ahead=from+Vector3.ClampMagnitude(d,1.0f);obstacle=Obstacle(from,ahead);}
    if(obstacle!=null)
    {
-    // A stationary worker is just as persistent as a fence. Plan against current collision geometry;
-    // neither object type nor the presence of a NavMeshAgent is evidence that it will move away.
+    // Plan around live solid geometry; visuals and placement footprints are not obstacles.
     blockingCollider=obstacle;LocalStorage.Log("实体阻挡，立即规划绕行 target="+navigation.Target+" collider="+obstacle.name+" type="+obstacle.GetType().Name+" at="+obstacle.bounds.center);CaptureFailure("physical_obstacle");
     agent.isStopped=true;CancelVehicle();s.Reason="前方路径被占用，规划绕行";
     if(BeginLocalRoute(walkTarget,s,now,"physical_obstacle"))return;

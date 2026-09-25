@@ -23,7 +23,7 @@ namespace BD2Territory
   public override bool Equals(object v)=>v is RouteEdgeKey&&Equals((RouteEdgeKey)v);
   public override int GetHashCode(){unchecked{return a.GetHashCode()*397^b.GetHashCode();}}
  }
- // Bounded FIFO memoization. Cache only static physics; NPC occupancy and execution are always live.
+ // Bounded FIFO memoization. Cache only static physics; executed corridors are checked against live colliders.
  public sealed class RouteMemo<TKey,TValue>
  {
   private sealed class Entry{public long At,Serial;public TValue Value;}

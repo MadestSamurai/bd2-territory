@@ -49,8 +49,6 @@ public static class ContractGenerator
   Api("Tool.Event","FieldEvent.Life.LifePlayerToolEquipmentController","ὧὭὤὡὥὠὫὬὠὬὯ",1);
   Api("Detector.Distance","CircleSectorCollider","_distance");
   Api("Ui.Back","UIBase","OnClickBackButton",0);
-  Role("NpcManager","FieldEvent.Life.LifeNPCViewController");
-  Api("Npc.Citizens","FieldEvent.Life.LifeNPCViewController","GetAllNPCs",0);Api("Npc.Workers","FieldEvent.Life.LifeNPCViewController","GetAllWorkerNPCs",0);
   Api("Gather.Near","gamfs.Life.LifeManager","GetNearestDetectedGatheringObject",2);
   Api("Gather.Detected","gamfs.Life.LifeManager","ὠὪὫὮὧὩὨὪὡὢὪ");
   Api("Field.Context","GameFieldManager","ὢὢὢὣὡὣὠὫὫὧὦ");
