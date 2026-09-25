@@ -77,6 +77,7 @@ namespace BD2Territory.Runtime
  internal sealed partial class RuntimeEngine
  {
   private readonly BD2Territory.LocalRouteMemory localPaths=new();
+  private readonly BD2Territory.RouteMemo<BD2Territory.RouteSampleKey,BD2Territory.RoutePoint?> localGround=new(100);
   private readonly BD2Territory.RouteMemo<BD2Territory.RouteEdgeKey,bool> localEdges=new(100,TimeSpan.FromSeconds(30).Ticks);
   private readonly System.Collections.Generic.List<UnityEngine.Vector3> triedDestinations=new();
   private bool ownsMove,bypassing,vehiclePending,gatheringReposition;private UnityEngine.Component walkTarget;private string walkScene;
@@ -93,6 +94,7 @@ namespace BD2Territory.Runtime
   private static LifeGatheringObject[] Detected(int kind)=>Array.Empty<LifeGatheringObject>();
   private bool TryEscape(BD2Territory.TerritorySnapshot s,long now,BD2Territory.TerritoryControl c,UnityEngine.Collider o)=>false;
   private void UpdateVehicle(long now,BD2Territory.TerritoryControl c,double remaining){}
+  private bool CachedTraversalClear(UnityEngine.Vector3 p)=>TraversalClear(p);
   private BD2Territory.RoutePoint? CachedGround(BD2Territory.RoutePoint p)=>GroundPoint(Vector(p),out var g,false)?Point(g):null;
  }
 }

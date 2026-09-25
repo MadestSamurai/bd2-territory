@@ -17,7 +17,7 @@ namespace BD2Territory.Runtime
   private RoutePoint? LocalSample(RoutePoint p)
   {
    var ground=CachedGround(p);if(!ground.HasValue)return null;var point=Vector(ground.Value);
-   if(!localBlocked.SampleAllowed(Point(localOrigin),Point(point))||!localTrial&&!TraversalClear(point))return null;
+   if(!localBlocked.SampleAllowed(Point(localOrigin),Point(point))||!localTrial&&!CachedTraversalClear(point))return null;
    return ground;
   }
   private bool LocalEdge(RoutePoint a,RoutePoint b)
@@ -77,8 +77,9 @@ namespace BD2Territory.Runtime
    if(goals.Length==0){LocalStorage.Log("局部规划无站位 target="+target.GetInstanceID()+" reason="+reason);return false;}
    localOrigin=player.transform.position;localMoving=true;localPlanAt=now;
    var saved=localPaths.Reuse(target.GetInstanceID(),now,Point(localOrigin),p=>goals.Any(g=>RoutePoint.Distance(g,p)<.06)&&CanGatherAt(target,Vector(p)),LocalEdge);
+   if(saved==null)saved=localPaths.ReuseCorridor(Point(localOrigin),goals,LocalEdge);
    if(saved!=null){localSearch=null;SetLocalRoute(saved,now);s.Reason="复用已检测通路，实时核对障碍";LocalStorage.Log("实体路线缓存命中 target="+target.GetInstanceID()+" points="+saved.Length);return true;}
-   localSearch=new AdaptiveLocalRoute(Point(localOrigin),goals,LocalSample,PlanEdge,localFine,localBudget.Plans==1?8:14);
+   localSearch=new AdaptiveLocalRoute(Point(localOrigin),goals,LocalSample,PlanEdge,false,localBudget.Plans==1?8:14,BridgeRouteGuides());
    localRoute=new Vector3[0];localIndex=0;
    LocalStorage.Log("实体局部规划 target="+target.GetInstanceID()+" reason="+reason+" plan="+localBudget.Plans+" goals="+goals.Length+" from="+player.transform.position);
    s.Reason="检测周围障碍，规划普通移动绕行";return true;
@@ -101,13 +102,15 @@ namespace BD2Territory.Runtime
    if(localSearch!=null)
    {
     if(now-localPlanAt>TimeSpan.FromSeconds(15).Ticks){if(!localTrial){localTrial=true;if(BeginLocalRoute(walkTarget,s,now,"native_probe_after_prediction_timeout"))return;}SkipWalkTarget(walkTarget,s,now,"local_planning_budget");return;}
-    if(now-localPlanAt>=TimeSpan.FromSeconds(4).Ticks)localSearch.Refine();
+    // A slow wide detour is not evidence of a narrow passage. Keep the coarse
+    // frontier until it is exhausted; restarting at 0.1 m multiplies area by 16.
+    // Authored bridge guides cover narrow crossings without refining the whole map.
     var status=localSearch.Step(256,6);localFine=localSearch.Cell<.4;s.Reason=(localFine?"细化窄路网格 · ":"扫描地面和碰撞体 · ")+localSearch.Expanded+" 个路点";
     if(status==RouteSearchState.Searching)return;
     if(status==RouteSearchState.Exhausted)
     {if(!localTrial){localTrial=true;if(BeginLocalRoute(walkTarget,s,now,"native_traversal_probe"))return;}int count=localSearch.Expanded;LocalStorage.Log("实体局部规划未找到通路 target="+walkTarget.GetInstanceID()+" expanded="+count);if(localBudget.Plans<2&&BeginLocalRoute(walkTarget,s,now,"expand_local_area"))return;SkipWalkTarget(walkTarget,s,now,"local_route_exhausted");return;}
-    var path=localSearch.Path;localPaths.Save(localTarget,now,path);SetLocalRoute(path,now);localSearch=null;
-    LocalStorage.Log("实体局部路线就绪 target="+walkTarget.GetInstanceID()+" points="+localRoute.Length+" goal="+localRoute.Last());
+    var path=localSearch.Path;localPaths.Save(localTarget,now,path);SetLocalRoute(path,now);
+    LocalStorage.Log("实体局部路线就绪 target="+walkTarget.GetInstanceID()+" points="+localRoute.Length+" goal="+localRoute.Last()+" planMs="+((now-localPlanAt)/TimeSpan.TicksPerMillisecond)+" expanded="+localSearch.Expanded+" cell="+localSearch.Cell+" floorCache="+localGround.Hits+"/"+localGround.Misses+" edgeCache="+localEdges.Hits+"/"+localEdges.Misses);localSearch=null;
    }
    var from=player.transform.position;
    bool detected=walkTarget is LifeGatheringObject resource&&Detected(Kind(resource)).Contains(resource);

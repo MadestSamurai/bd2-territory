@@ -72,10 +72,25 @@ namespace BD2Territory.Runtime
    var lpo=collider.GetComponentInParent<LifePlaceableObject>();
    return lpo!=null&&terrainGates.Any(g=>g!=null&&g.GetComponent<LifePlaceableObject>()==lpo&&LiveBridge(g)!=null);
   }
+  private RoutePoint[] BridgeRouteGuides()
+  {
+   var points=new System.Collections.Generic.List<RoutePoint>();
+   foreach(var gate in terrainGates)
+   {
+    var box=LiveBridge(gate);if(box==null)continue;
+    // The native gate's local Z is the bridge length. Include a short approach on
+    // either bank; all samples still require actual ground and valid water cover.
+    float scale=Math.Max(.001f,Math.Abs(box.transform.lossyScale.z));
+    float half=box.size.z*.5f+.65f/scale;int count=Math.Max(1,(int)Math.Ceiling(half*2*scale/.1f));
+    for(int i=0;i<=count;i++)
+    {var local=box.center;local.y-=box.size.y*.5f;local.z+=-half+half*2*i/count;points.Add(Point(box.transform.TransformPoint(local)));}
+   }
+   return points.ToArray();
+  }
   private string SurfaceContext()
   {
    var gm=terrainController==null?null:terrainController.GetChunkManager();
-   return (gm==null?"missing":gm.GetInstanceID().ToString())+"/"+string.Join(";",terrainGates.Select(g=>{var b=LiveBridge(g);return b==null?"missing":b.GetInstanceID()+"/"+b.transform.position.ToString("F4")+"/"+b.transform.eulerAngles.ToString("F3")+"/"+b.transform.lossyScale.ToString("F4")+"/"+b.center.ToString("F4")+"/"+b.size.ToString("F4");}).ToArray());
+   return (gm==null?"missing":gm.GetInstanceID().ToString())+"/"+string.Join(";",terrainGates.OrderBy(g=>g==null?0:g.GetInstanceID()).Select(g=>{var b=LiveBridge(g);return b==null?"missing":b.GetInstanceID()+"/"+b.transform.position.ToString("F4")+"/"+b.transform.eulerAngles.ToString("F3")+"/"+b.transform.lossyScale.ToString("F4")+"/"+b.center.ToString("F4")+"/"+b.size.ToString("F4");}).ToArray());
   }
  }
 }

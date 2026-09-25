@@ -1,3 +1,51 @@
+# BD2 Territory v0.3.8-beta.1
+
+## 简体中文
+
+### 更新内容
+
+- 减少开启自动料理后、采集区与农田之间往返时的重复寻路等待。
+- 已检测的地面与通路不再按时间清空；采集、建筑移动或桥梁变化只更新受影响区域，料理和库存变化不触发重建。
+- 保留粗网格搜索进度，沿游戏实际桥梁规划窄路；支持不同目标之间正向或反向复用已检测通路。
+- 包含水面只走桥梁、矿点采集站位和领地地形台阶的修复。
+
+### 下载
+
+| 版本 | 运行环境 | 建议 |
+| --- | --- | --- |
+| Portable | 自带 .NET | 大多数用户 |
+| Lite | .NET Desktop Runtime 8 x64 | 已安装桌面运行库 |
+
+两版功能相同，内置中英切换。EXE 可独立运行；ZIP 包含双语说明和许可证，下载校验见 `SHA256SUMS.txt`。
+
+### 升级
+
+暂停并关闭旧工具，打开新版，点击「连接／更新组件」，连接完成后再开始。保留已有设置及种植进度。
+
+## English
+
+### Changes
+
+- Reduces repeated route-planning waits when moving between gathering areas and farms with automatic cooking enabled.
+- Retains checked terrain and routes instead of expiring them on a timer. Harvesting, moved structures and bridge changes update affected areas; cooking and inventory changes do not rebuild the map.
+- Preserves coarse-grid search progress, follows native bridge corridors and reuses checked routes in either direction for different targets.
+- Includes water-only-via-bridges protection, improved ore interaction positions and native terrain-step handling.
+
+### Downloads
+
+| Build | Runtime | Recommended for |
+| --- | --- | --- |
+| Portable | Includes .NET | Most users |
+| Lite | .NET Desktop Runtime 8 x64 | Users with the desktop runtime installed |
+
+Both builds have the same features and include Chinese/English switching. Each EXE runs on its own; ZIPs include bilingual documentation and licenses. Verify downloads with `SHA256SUMS.txt`.
+
+### Upgrade
+
+Pause and close the old tool, open the new build and select **Connect / update component** before starting. Existing settings and planting progress are retained.
+
+---
+
 # BD2 Territory v0.3.7-beta.1
 
 ## 简体中文

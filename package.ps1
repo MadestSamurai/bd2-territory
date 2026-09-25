@@ -28,7 +28,7 @@ foreach($flavor in @('Portable','Lite')){
     $identityPath=Join-Path $check 'identity.json'
     RunCheck @('--identity',('"'+$identityPath+'"'))
     $identity=Get-Content $identityPath -Raw | ConvertFrom-Json
-    if($identity.runtime -ne 'BD2Territory.Runtime21' -or $identity.compatibility -ne 'local-interface-adaptation' -or $identity.defaultIntervalMs -ne 500 -or $identity.defaultNavigation -ne 'astar' -or $identity.defaultUseNavMesh -ne $false){throw 'Embedded identity differs from release'}
+    if($identity.runtime -ne 'BD2Territory.Runtime22' -or $identity.compatibility -ne 'local-interface-adaptation' -or $identity.defaultIntervalMs -ne 500 -or $identity.defaultNavigation -ne 'astar' -or $identity.defaultUseNavMesh -ne $false){throw 'Embedded identity differs from release'}
     RunCheck @('--smoke',('"'+$check+'"'))
     $ui=Get-Content (Join-Path $check 'results.json') -Raw | ConvertFrom-Json
     if($ui.status -ne 'pass' -or $ui.assertions.Count -lt 34){throw 'Packaged UI regression failed'}
