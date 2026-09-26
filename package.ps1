@@ -1,4 +1,4 @@
-﻿param([string]$Version='', [string]$ClientManaged='', [switch]$Locked)
+param([string]$Version='', [string]$ClientManaged='', [switch]$Locked)
 $ErrorActionPreference='Stop'
 $declared=([xml](Get-Content (Join-Path $PSScriptRoot 'Directory.Build.props') -Raw)).Project.PropertyGroup.Version
 if(!$Version){$Version=$declared}
@@ -29,13 +29,13 @@ foreach($flavor in @('Portable','Lite')){
     $identityPath=Join-Path $check 'identity.json'
     RunCheck @('--identity',('"'+$identityPath+'"'))
     $identity=Get-Content $identityPath -Raw | ConvertFrom-Json
-    if($identity.runtime -ne 'BD2Territory.Runtime23' -or $identity.compatibility -ne 'local-interface-adaptation' -or $identity.defaultIntervalMs -ne 500 -or $identity.defaultNavigation -ne 'astar' -or $identity.defaultUseNavMesh -ne $false){throw 'Embedded identity differs from release'}
+    if($identity.runtime -ne 'BD2Territory.Runtime24' -or $identity.compatibility -ne 'local-interface-adaptation' -or $identity.defaultIntervalMs -ne 500 -or $identity.defaultNavigation -ne 'astar' -or $identity.defaultUseNavMesh -ne $false){throw 'Embedded identity differs from release'}
     RunCheck @('--smoke',('"'+$check+'"'))
     $ui=Get-Content (Join-Path $check 'results.json') -Raw | ConvertFrom-Json
     if($ui.status -ne 'pass' -or $ui.assertions.Count -lt 34){throw 'Packaged UI regression failed'}
     RunCheck @('--smoke-en',('"'+(Join-Path $check 'english-system')+'"'))
     if(!$identity.automaticSurplusSales -or $identity.defaultAutoSell -or $identity.defaultSellThreshold -ne 9900 -or $identity.minSellThreshold -ne 100 -or $identity.maxSellThreshold -ne 9900){throw 'Surplus sale identity differs from release'}
-    if($identity.batchSize -ne 100 -or $identity.ratio -ne '5:3:2' -or $identity.automaticStart){throw 'Recipe or automatic start identity differs'}
+    if(!$identity.dynamicPlantingBatch -or $identity.plantingBatchMode -ne 'native-preview' -or $identity.requiresConnectedFarm -or $identity.ratio -ne '5:3:2' -or $identity.automaticStart){throw 'Recipe or automatic start identity differs'}
     if($ClientManaged){
         $clientReport=Join-Path $check 'client.json'
         RunCheck @('--check-client',('"'+$ClientManaged+'"'),('"'+$clientReport+'"'))

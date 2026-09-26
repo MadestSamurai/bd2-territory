@@ -10,7 +10,7 @@ internal static class LayoutRecipeTests
  {
   int n=0;void Check(bool ok,string why){n++;if(!ok)throw new Exception(why);}void Reject(Action a,string why){bool caught=false;try{a();}catch(InvalidOperationException){caught=true;}Check(caught,why);}
   var crops=new[]{new CropStock{SeedId=2,Required=40,Yield=1},new CropStock{SeedId=15,Required=20,Yield=1}};var p=new RecipeBatchProgress{RecipeId=7,Account="one"};
-  for(int i=0;i<120;i++){int id=RecipeBatchPlanner.Choose(p,crops);RecipeBatchPlanner.Confirm(p,id,100,"receipt-"+i);crops.Single(v=>v.SeedId==id).Inventory+=100;}
+  for(int i=0;i<120;i++){int id=RecipeBatchPlanner.Choose(p,crops);p.PlannedCount=100;RecipeBatchPlanner.Confirm(p,id,100,"receipt-"+i);crops.Single(v=>v.SeedId==id).Inventory+=100;}
   Check(crops[0].Inventory==8000&&crops[1].Inventory==4000,"two-ingredient recipe maintains 2:1 across 120 batches");
   Check(RecipeBatchPlanner.Choose(new(),new[]{new CropStock{SeedId=1,Required=1,Yield=2}})==1,"one-ingredient future recipe supported");
   Reject(()=>RecipeBatchPlanner.Choose(new(),Array.Empty<CropStock>()),"empty recipe rejected");

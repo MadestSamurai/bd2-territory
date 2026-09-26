@@ -16,7 +16,7 @@ public partial class TerritoryWindow : Window
  public TerritoryWindow(string? dataRoot=null)
  {
   root=dataRoot??TerritoryIdentity.DataRoot;link=new(root);InitializeComponent();BD2.Distribution.DistributionNotice.Attach(this,LanguageBox);InitializeLanguage();
-  Set(VersionText,"0.3.9 beta");
+  Set(VersionText,"0.3.10 beta");
   var settings=TerritoryJson.Read<TerritorySettings>(Path.Combine(root,"settings.json"))??new();
   if(!settings.ValidSettings())settings=new();
   selectedSeed=settings.FixedSeedId;PlantingModeBox.SelectedIndex=settings.FixedCrop?1:0;
@@ -49,7 +49,7 @@ public partial class TerritoryWindow : Window
  private void PlantingChanged(object sender,System.Windows.Controls.SelectionChangedEventArgs e)
  {if(!initialized||refreshingRecipes)return;if(FixedSeedBox.SelectedValue is int seed)selectedSeed=seed;SettingsChanged(sender,e);}
  private void RecipeChanged(object sender,System.Windows.Controls.SelectionChangedEventArgs e)
- {if(!initialized||refreshingRecipes)return;if(RecipeBox.SelectedItem is RecipeOption r){selectedRecipe=r.Id;SettingsChanged(sender,e);Set(RecipeHint,r.Available?r.Ratio+"。每批同种 100 个；正在播种时，本批回执确认后切换。":r.Reason);}}
+ {if(!initialized||refreshingRecipes)return;if(RecipeBox.SelectedItem is RecipeOption r){selectedRecipe=r.Id;SettingsChanged(sender,e);Set(RecipeHint,r.Available?r.Ratio+"。按实际空田分批播种；正在播种时，本批回执确认后切换。":r.Reason);}}
  private void LayoutClick(object sender,RoutedEventArgs e)
  {if(link.Enabled){ShowError("请先暂停采集和种植，再打开布局工具。");return;}new LayoutWindow(root,link){Owner=this}.ShowDialog();Refresh();}
  private void ShowError(string text){Set(ErrorText,text);ErrorText.Visibility=string.IsNullOrEmpty(text)?Visibility.Collapsed:Visibility.Visible;}
@@ -100,9 +100,9 @@ public partial class TerritoryWindow : Window
   {
    var key=ui.Language.Language+"|"+string.Join("|",s.Seeds.Select(v=>v.Id+v.Label));
    if(!FixedSeedBox.IsDropDownOpen&&key!=seedCatalogKey){refreshingRecipes=true;FixedSeedBox.ItemsSource=s.Seeds.Select(v=>new RecipeOption{Id=v.Id,Name=v.Name,Reason=ui.Language.Text(v.Reason),Available=v.Available}).ToArray();FixedSeedBox.SelectedValue=selectedSeed;seedCatalogKey=key;refreshingRecipes=false;}
-   var seed=s.Seeds.FirstOrDefault(v=>v.Id==selectedSeed);Set(FixedCropHint,seed==null?"请选择要固定种植的作物。":seed.Available?"每批同种 100 个，收获后继续种植此作物；切换时先完成当前播种回执。":seed.Reason);
+   var seed=s.Seeds.FirstOrDefault(v=>v.Id==selectedSeed);Set(FixedCropHint,seed==null?"请选择要固定种植的作物。":seed.Available?"按实际空田分批种植，收获后继续种植此作物；切换时先完成当前播种回执。":seed.Reason);
   }
-  if(s.Recipes?.Length>0){var key=string.Join("|",s.Recipes.Select(v=>v.Id+v.Label+v.Ratio));if(!RecipeBox.IsDropDownOpen&&key!=recipeCatalogKey){refreshingRecipes=true;RecipeBox.ItemsSource=s.Recipes.Select(v=>new RecipeOption{Id=v.Id,Name=v.Name,Ratio=v.Ratio,Reason=ui.Language.Text(v.Reason),Available=v.Available}).ToArray();RecipeBox.SelectedValue=selectedRecipe;recipeCatalogKey=key;refreshingRecipes=false;}var r=s.Recipes.FirstOrDefault(v=>v.Id==selectedRecipe);Set(RecipeHint,r==null?"当前客户端已无此配方，请重新选择。":r.Available?r.Ratio+"。每批同种 100 个；切换时先完成当前播种回执。":r.Reason);}
+  if(s.Recipes?.Length>0){var key=string.Join("|",s.Recipes.Select(v=>v.Id+v.Label+v.Ratio));if(!RecipeBox.IsDropDownOpen&&key!=recipeCatalogKey){refreshingRecipes=true;RecipeBox.ItemsSource=s.Recipes.Select(v=>new RecipeOption{Id=v.Id,Name=v.Name,Ratio=v.Ratio,Reason=ui.Language.Text(v.Reason),Available=v.Available}).ToArray();RecipeBox.SelectedValue=selectedRecipe;recipeCatalogKey=key;refreshingRecipes=false;}var r=s.Recipes.FirstOrDefault(v=>v.Id==selectedRecipe);Set(RecipeHint,r==null?"当前客户端已无此配方，请重新选择。":r.Available?r.Ratio+"。按实际空田分批播种；切换时先完成当前播种回执。":r.Reason);}
   if(link.Enabled&&s.OwnerId==link.OwnerId&&!string.IsNullOrEmpty(s.Error))
   {try{link.Stop();}catch{}ShowError(s.Error);}
   bool ours=s.OwnerId==link.OwnerId;
@@ -110,10 +110,10 @@ public partial class TerritoryWindow : Window
   Set(ReasonText,link.Enabled?(ours?s.Reason:"等待游戏接收开始指令"):s.Ready?"设置完成后点击「开始自动化」。":"请进入可走动的 Fantasia Territory 领地。");
   if(!string.IsNullOrEmpty(link.Error))ShowError(link.Error);
   Set(TargetText,link.Enabled&&ours?s.Target:"");
-  Set(BatchText,s.BatchSeedId>0?$"当前作物：{s.Crops?.FirstOrDefault(c=>c.SeedId==s.BatchSeedId)?.Name??s.BatchSeedId.ToString()}　已确认 {s.BatchPlanted} / 100　完成 {s.CompletedBatches} 批":"开启后显示当前批次");
+  Set(BatchText,s.BatchSeedId>0?$"当前作物：{s.Crops?.FirstOrDefault(c=>c.SeedId==s.BatchSeedId)?.Name??s.BatchSeedId.ToString()}　{(s.BatchTotal>0?$"已确认 {s.BatchPlanted} / {s.BatchTotal}":"等待读取本片农田")}　完成 {s.CompletedBatches} 批":"开启后显示当前批次");
   Set(CookingText,$"已确认制作 {s.Cooked} 份"+(s.CookingState=="pending"?" · 等待服务器确认":""));
   Set(SalesText,$"已确认售卖 {s.SoldItems} 个，获得领地币 {s.SaleCurrency}"+(s.SalesState=="pending"?" · 等待服务器确认":""));
-  BatchBar.Value=Math.Clamp(s.BatchPlanted,0,100);
+  BatchBar.Maximum=Math.Max(1,s.BatchTotal);BatchBar.Value=Math.Clamp(s.BatchPlanted,0,Math.Max(0,s.BatchTotal));
   CropsGrid.Columns[1].Visibility=s.ActiveFixedSeedId>0?Visibility.Collapsed:Visibility.Visible;
   CropsGrid.ItemsSource=(s.Crops??Array.Empty<CropStock>()).Select(c=>new CropRow(c.Name,c.Required,c.Inventory,c.Growing,ui.Language.Text(c.GrowthSeconds>=60?$"{c.GrowthSeconds/60} 分钟":$"{c.GrowthSeconds} 秒"))).ToArray();
   Set(StatsText,$"耕地 {s.Fields}，空地 {s.EmptyFields}，可收作物 {s.Mature} · 成熟树 {s.Trees} · 成熟矿点 {s.Ores}\n已确认采集 {s.GatherReplies} 次，物品 {s.ReceivedItems} 个 · 本次播种已用 {s.Spent}");
@@ -143,7 +143,7 @@ public partial class TerritoryWindow : Window
   Check(VehicleBox.IsChecked==true&&DashBox.IsChecked==true,"默认开启载具赶路与冲刺脱困");
   Check(NavMeshBox.IsChecked==false,"默认不启用 NavMesh，使用 A* 寻路");
   StartClick(this,new());Check(!link.Enabled&&ErrorText.Visibility==Visibility.Visible,"无心跳不能开始");ShowError("");
-  var s=new TerritorySnapshot{Ready=true,ProcessId=424242,CapturedUtcTicks=DateTime.UtcNow.Ticks,Scene="Fantasia Territory",Fields=100,EmptyFields=38,Trees=8,Ores=5,Mature=12,BatchSeedId=2,BatchPlanted=100,CompletedBatches=3,Spent=100,GatherReplies=27,ReceivedItems=64,Crops=new[]{new CropStock{SeedId=2,Name="弯弯土豆",Required=5,Inventory=300,Growing=62,GrowthSeconds=60},new CropStock{SeedId=1,Name="黏糯小麦",Required=3,Inventory=200,Growing=0,GrowthSeconds=300},new CropStock{SeedId=4,Name="活力蘑菇",Required=2,Inventory=100,Growing=0,GrowthSeconds=900}}};
+  var s=new TerritorySnapshot{Ready=true,ProcessId=424242,CapturedUtcTicks=DateTime.UtcNow.Ticks,Scene="Fantasia Territory",Fields=100,EmptyFields=38,Trees=8,Ores=5,Mature=12,BatchSeedId=2,BatchPlanted=37,BatchTotal=37,CompletedBatches=3,Spent=100,GatherReplies=27,ReceivedItems=64,Crops=new[]{new CropStock{SeedId=2,Name="弯弯土豆",Required=5,Inventory=300,Growing=62,GrowthSeconds=60},new CropStock{SeedId=1,Name="黏糯小麦",Required=3,Inventory=200,Growing=0,GrowthSeconds=300},new CropStock{SeedId=4,Name="活力蘑菇",Required=2,Inventory=100,Growing=0,GrowthSeconds=900}}};
   void Feed(){s.CapturedUtcTicks=DateTime.UtcNow.Ticks;TerritoryJson.Write(Path.Combine(root,"latest.json"),s);Refresh();}
   Feed();Check(StartButton.IsEnabled&&CropsGrid.Items.Count==3,"识别领地后展示配方并允许开始");
   IntervalBox.Text="50";StartClick(this,new());Check(!link.Enabled,"非法间隔不启动");IntervalBox.Text="500";
@@ -152,7 +152,10 @@ public partial class TerritoryWindow : Window
   var command=TerritoryJson.Read<TerritoryControl>(Path.Combine(root,"control.json"));Check(link.Enabled&&command!=null&&command.Valid(DateTime.UtcNow.Ticks,424242),"开始写入有效短租约");
   s.OwnerId=link.OwnerId;s.Enabled=true;s.Reason="使用当前工具正常采集";s.Target="收获作物";Feed();
   Check(StopButton.IsEnabled&&!StartButton.IsEnabled&&!ConnectButton.IsEnabled,"运行中可暂停且禁止重复连接");
-  Check(BatchBar.Value==100&&BatchText.Text.Contains("100 / 100"),"批次显示确认进度");
+  Check(BatchBar.Value==37&&BatchBar.Maximum==37&&BatchText.Text.Contains("37 / 37"),"批次显示实际确认进度");
+  s.BatchTotal=9;s.BatchPlanted=0;Feed();Check(BatchBar.Maximum==9&&BatchBar.Value==0&&BatchText.Text.Contains("0 / 9"),"下一片小田重新显示实际待确认数量");
+  s.BatchTotal=0;Feed();Check(BatchText.Text.Contains("等待读取本片农田")&&!BatchText.Text.Contains("/ 100"),"未取得预览时不显示虚构百格进度");
+  s.BatchTotal=37;s.BatchPlanted=37;Feed();
   MiningBox.IsChecked=false;command=TerritoryJson.Read<TerritoryControl>(Path.Combine(root,"control.json"));Check(command?.Mining==false,"运行开关同步保存");MiningBox.IsChecked=true;
   VehicleBox.IsChecked=false;DashBox.IsChecked=false;command=TerritoryJson.Read<TerritoryControl>(Path.Combine(root,"control.json"));Check(command!=null&&!command.UseVehicle&&!command.DashRecovery,"运行时关闭移动辅助同步到组件");
   var saved=TerritoryJson.Read<TerritorySettings>(Path.Combine(root,"settings.json"));Check(saved!=null&&!saved.UseVehicle&&!saved.DashRecovery,"移动辅助偏好持久保存");VehicleBox.IsChecked=true;DashBox.IsChecked=true;
@@ -195,6 +198,7 @@ public partial class TerritoryWindow : Window
   Check(!link.Enabled&&File.ReadAllText(Path.Combine(root,"settings.json"))==settingsBefore,"切换英语不会改变运行设置或启动自动化");
   Check((string)Resources["Ui62"]=="Start automation"&&RecipeBox.SelectedValue is int,"英语主操作与配方选择保留");
   Check(!CookingBox.IsChecked.GetValueOrDefault()&&CookingBatchBox.Text=="100","料理默认关闭且批次限制可见");
+  Check(new[]{"同种作物 × 37 · 一次提交","等待 37 格整批播种回执","当前 37 格播种费用超出余额或剩余预算；继续处理其他农田、采集和收获","批量预览 37 格，等待空田核对：缓存 2，数据未载入 0，请求未结算 0","等待读取本片农田"}.All(v=>!System.Text.RegularExpressions.Regex.IsMatch(ui.Language.Text(v),"[\u4e00-\u9fff]")),"动态农田数量与状态可完整显示英文");
   Check(UiLabels.All.Values.All(v=>ui.Language.Text(v)!=v||!System.Text.RegularExpressions.Regex.IsMatch(v,"[\u4e00-\u9fff]")),"全部静态界面文本覆盖英文");
   var enBitmap=new RenderTargetBitmap((int)ActualWidth,(int)ActualHeight,96,96,PixelFormats.Pbgra32);enBitmap.Render(this);var enEncoder=new PngBitmapEncoder();enEncoder.Frames.Add(BitmapFrame.Create(enBitmap));using(var f=File.Create(Path.Combine(output,"territory-en.png")))enEncoder.Save(f);
   SellThresholdBox.BringIntoView();await Dispatcher.InvokeAsync(()=>{},DispatcherPriority.ApplicationIdle);UpdateLayout();

@@ -13,7 +13,7 @@ public partial class App : Application
   {
    if(e.Args.Length==2&&e.Args[0]=="--identity")
    {
-    File.WriteAllText(e.Args[1],JsonSerializer.Serialize(new{version="0.3.9-beta.1",languages=new[]{"zh-CN","en-US"},automaticCooking=true,automaticSurplusSales=true,defaultAutoSell=false,defaultSellThreshold=9900,minSellThreshold=100,maxSellThreshold=9900,defaultCooking=false,defaultUseNavMesh=false,defaultNavigation="astar",defaultCookingBatch=100,runtime=TerritoryIdentity.RuntimeName,toolFingerprint=HookCompiler.ToolFingerprint,compatibility="local-interface-adaptation",recipe="活力面疙瘩",dynamicRecipes=true,fixedCropPlanting=true,adaptiveGrid=true,navigationCache=true,layoutImport=true,layoutTemplates=3,batchSize=100,ratio="5:3:2",defaultIntervalMs=500,defaultPlantingBudget=1400,automaticStart=false}));Shutdown();return;
+    File.WriteAllText(e.Args[1],JsonSerializer.Serialize(new{version="0.3.10-beta.1",languages=new[]{"zh-CN","en-US"},automaticCooking=true,automaticSurplusSales=true,defaultAutoSell=false,defaultSellThreshold=9900,minSellThreshold=100,maxSellThreshold=9900,defaultCooking=false,defaultUseNavMesh=false,defaultNavigation="astar",defaultCookingBatch=100,runtime=TerritoryIdentity.RuntimeName,toolFingerprint=HookCompiler.ToolFingerprint,compatibility="local-interface-adaptation",recipe="活力面疙瘩",dynamicRecipes=true,fixedCropPlanting=true,adaptiveGrid=true,navigationCache=true,layoutImport=true,layoutTemplates=3,dynamicPlantingBatch=true,plantingBatchMode="native-preview",requiresConnectedFarm=false,ratio="5:3:2",defaultIntervalMs=500,defaultPlantingBudget=1400,automaticStart=false}));Shutdown();return;
    }
    if(e.Args.Length==3&&e.Args[0]=="--check-client")
    {

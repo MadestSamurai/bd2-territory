@@ -63,7 +63,7 @@
       <TextBlock Text="{DynamicResource CookingHint}" TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" Margin="0,0,0,8"/>
       <TextBlock x:Name="CookingText" TextWrapping="Wrap" Margin="0,0,0,8"/>
       <TextBlock x:Name="BatchText" Text="{DynamicResource Ui51}" Margin="0,0,0,6"/>
-      <ProgressBar x:Name="BatchBar" Height="6" Maximum="100" Foreground="{StaticResource PrimaryBrush}" Background="#E8EDF3" BorderThickness="0"/>
+      <ProgressBar x:Name="BatchBar" Height="6" Maximum="1" Foreground="{StaticResource PrimaryBrush}" Background="#E8EDF3" BorderThickness="0"/>
       <DataGrid x:Name="CropsGrid" Margin="0,12,0,0" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" CanUserResizeRows="False" CanUserSortColumns="False" HeadersVisibility="Column" GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#EDF0F4" BorderThickness="0" RowHeight="34" ColumnHeaderHeight="32" Background="White" SelectionMode="Single" MinHeight="100">
        <DataGrid.Columns><DataGridTextColumn Header="{DynamicResource Ui52}" Binding="{Binding Name}" Width="*"/><DataGridTextColumn Header="{DynamicResource Ui53}" Binding="{Binding Required}" Width="84"/><DataGridTextColumn Header="{DynamicResource Ui54}" Binding="{Binding Inventory}" Width="84"/><DataGridTextColumn Header="{DynamicResource Ui55}" Binding="{Binding Growing}" Width="94"/><DataGridTextColumn Header="{DynamicResource Ui56}" Binding="{Binding Growth}" Width="100"/></DataGrid.Columns>
       </DataGrid>

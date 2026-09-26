@@ -29,9 +29,9 @@ for(int batch=0;batch<100;batch++)
 Check(totals[2]==5000&&totals[1]==3000&&totals[4]==2000,"100 次整批事务产出应为 5:3:2");
 Check(p.Spent==14000,"100 批总费用应为 14000，不重复乘 100");
 var stock=Stocks();stock[0].Inventory=500;stock[1].Growing=300;Check(RecipeBatchPlanner.Choose(new(),stock)==4,"库存及地里作物共同决定缺口");
-Reject(()=>RecipeBatchPlanner.Confirm(new(){SeedId=2},2,1,"one"),"不能退回逐格播种");
+Reject(()=>RecipeBatchPlanner.Confirm(new(){SeedId=2},2,1,"one"),"不能确认未经计划的单格");
 Reject(()=>RecipeBatchPlanner.Confirm(new(){SeedId=2},2,99,"partial"),"部分成功不能算为整批");
-Reject(()=>RecipeBatchPlanner.Confirm(new(){SeedId=2},2,int.MaxValue,"overflow"),"异常数量不能绕过批次上限");
+Reject(()=>RecipeBatchPlanner.Confirm(new(){SeedId=2},2,int.MaxValue,"overflow"),"异常数量不能绕过计划数量");
 Reject(()=>RecipeBatchPlanner.Choose(new(){SeedId=2,Planted=37},Stocks()),"拒绝半批记录");
 var now=DateTime.UtcNow.Ticks;var cmd=new TerritoryControl{Enabled=true,OwnerId="x",ProcessId=123,UntilUtcTicks=now+TimeSpan.FromSeconds(10).Ticks};Check(cmd.Valid(now,123),"正常租约");Check(!cmd.Valid(now,124),"其他进程不能复用租约");Check(!cmd.Valid(now+TimeSpan.FromSeconds(11).Ticks,123),"界面失联应停止");cmd.UntilUtcTicks=now+TimeSpan.FromDays(1).Ticks;Check(!cmd.Valid(now,123),"拒绝长期伪租约");
 var ledger=new RecipeBatchProgress{Account="account-a",SeedId=2,BudgetOwner="run-a",Spent=0};
@@ -41,7 +41,7 @@ fields[0]="changed";Check(!intent.PendingKeys.Contains("changed"),"调用者变�
 var copied=intent.Copy();copied.PendingKeys[0]="changed";Check(!intent.PendingKeys.Contains("changed"),"事务副本不能共享地块数组");
 Reject(()=>PlantingTransaction.Begin(intent,Fields(),1,"run-a",100,"operation-2"),"未确认时不得追加付款");
 Reject(()=>RecipeBatchPlanner.Choose(intent,Stocks()),"未知回执不得换批");
-foreach(int count in new[]{0,1,99,101})Reject(()=>PlantingTransaction.Begin(ledger,Enumerable.Range(0,count).Select(i=>"key"+i).ToArray(),1,"run-a",0,"wrong-size"),"必须恰好 100 格");
+Reject(()=>PlantingTransaction.Begin(ledger,Array.Empty<string>(),1,"run-a",0,"empty"),"空预览不能付款");
 var duplicates=Fields();duplicates[1]=duplicates[0];Reject(()=>PlantingTransaction.Begin(ledger,duplicates,1,"run-a",0,"duplicate"),"不能重复计数同一格");
 Check(!PlantingTransaction.SameKeys(Fields(),duplicates),"回执不得包含重复格子");
 var cells=Cells(Fields());Check(PlantingTransaction.MatchesRequest(intent,cells.Reverse().ToArray()),"网络顺序改变不影响整批身份");
@@ -247,7 +247,7 @@ Check(recovery.Observe(now+TimeSpan.FromSeconds(12).Ticks,.5,true,false)==Naviga
 Check(!recovery.Recover(now+TimeSpan.FromSeconds(13).Ticks,1),"已到硬时限不能借冲刺恢复");
 recovery.Begin(now+TimeSpan.FromSeconds(14).Ticks,2);recovery.CancelAttempt();Check(!recovery.Recover(now+TimeSpan.FromSeconds(15).Ticks,1),"显式暂停不能被恢复路径复活");
 var options=JsonSerializer.Deserialize<TerritorySettings>("{\"Mining\":true,\"IntervalMs\":500}");Check(options.UseVehicle&&options.DashRecovery,"已有设置缺省开启两个新开关");
-checks+=PlantingPreviewTests.Run();checks+=FixedCropTests.Run();checks+=AdaptiveNavigationTests.Run();
+checks+=PlantingPreviewTests.Run();checks+=DynamicPlantingTests.Run();checks+=FixedCropTests.Run();checks+=AdaptiveNavigationTests.Run();
 checks+=TraversalTests.Run();int localStart=checks;checks+=LocalNavigationTests.Run();int popupStart=checks;checks+=BD2Territory.Runtime.PopupFlowTests.Run();
 int popupFlowChecks=checks-popupStart;int layoutRecipeChecks=LayoutRecipeTests.Run();checks+=layoutRecipeChecks;
 Console.WriteLine(JsonSerializer.Serialize(new{layoutRecipeChecks,status="passed",assertions=checks,gatheringChecks,navigationChecks,readinessChecks=interactionStart-readinessStart,interactionAndHandoffChecks=travelStart-interactionStart,travelChecks=localStart-travelStart,localNavigationChecks=popupStart-localStart,popupFlowChecks,simulatedBatches=100,totalPotato=totals[2],totalWheat=totals[1],totalMushroom=totals[4]}));

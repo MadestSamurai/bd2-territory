@@ -20,7 +20,7 @@ If a network interruption leaves the outcome unknown, the tool pauses and preser
 
 ## Download
 
-Current version: **0.3.9-beta.1**. One application includes Simplified Chinese and English. Start with a small planting budget and cooking batch when evaluating this beta.
+Current version: **0.3.10-beta.1**. One application includes Simplified Chinese and English. Start with a small planting budget and cooking batch when evaluating this beta.
 
 | Edition | Runtime | Recommended for |
 | --- | --- | --- |
@@ -44,7 +44,7 @@ To update from the private territory 0.2.0 tool, pause the old tool before conne
 | Setting / feature | Behavior |
 | --- | --- |
 | Mining and logging | Gather only mature resources; failed targets remain in a retry queue |
-| Farming | Plant batches of 100 of one crop, balancing inventory and growing crops against recipe requirements; needs 100 connected fields |
+| Farming | Plant actual native preview groups, including smaller or disconnected fields; balance stock and expected growing yield against recipe requirements |
 | Recipes | Read current names, ingredients, seeds and unlock status; changes wait for the current planting batch |
 | Default recipe | Energizing Gnocchi, using a 5:3:2 ratio; the displayed name follows the game translation |
 | Automatic cooking | Off by default. Uses existing ingredients for the selected dish. Batch limit: 1–1000, default 100. Other activities continue when ingredients or output capacity are insufficient |
@@ -60,9 +60,17 @@ Cooking does not buy ingredients, sell items or switch dishes. Unknown results k
 
 ## Fixed crop planting and navigation
 
-Under **Planting and cooking**, choose **Balance a recipe** or **Plant a fixed crop**. Connect to load crop names and unlock status, then choose the crop to keep planting in batches of 100. Changes wait for the current planting transaction to finish; budgets and batch progress are preserved. Automatic cooking has its own recipe selection and remains optional.
+Under **Planting and cooking**, choose **Balance a recipe** or **Plant a fixed crop**. Connect to load crop names and unlock status, then choose the crop to keep planting in actual native batches. Changes wait for the current planting transaction to finish; budgets and batch progress are preserved. Automatic cooking has its own recipe selection and remains optional.
 
 A* refines narrow passages when the coarse grid fails. Ground checks and discovered routes are cached and warmed incrementally while idle; upcoming edges are checked live. Scene, layout, character and local resource changes invalidate the relevant cache. NavMesh remains optional and off by default.
+
+## Disconnected fields and recipe balance
+
+No layout change or 100-field farm is required. The tool visits available field areas and confirms each actual native batch before moving on. Smaller groups and single isolated fields are supported. If the game previews several areas together, they are submitted together.
+
+Each native batch uses one crop to reduce interactions. Recipe balance uses inventory plus the expected yield of growing crops. A 5:3:2 ratio targets ingredient output over repeated batches, not an exact split within every field group. Stock, growth times and yield affect the next crop. Charges use the actual field count; unaffordable groups are deferred while other eligible fields and gathering continue. Fixed-crop planting also supports scattered fields.
+
+Existing completed or pending planting journals are retained on upgrade. Offline regressions and client interface checks cover this change; continuous planting on scattered fields still needs live verification.
 
 ## Layout tools
 
@@ -97,7 +105,7 @@ Requires Windows, PowerShell and .NET 8 SDK. From this repository root:
 .\package.ps1 -Locked
 ```
 
-Packages go to `dist/v0.3.9-beta.1/`. [Development](docs/DEVELOPMENT.md) · [Localization](docs/LOCALIZATION.md) · [Publication style](docs/PUBLICATION_STYLE.md) · [Release notes](docs/RELEASE_NOTES.md)
+Packages go to `dist/v0.3.10-beta.1/`. [Development](docs/DEVELOPMENT.md) · [Localization](docs/LOCALIZATION.md) · [Publication style](docs/PUBLICATION_STYLE.md) · [Release notes](docs/RELEASE_NOTES.md)
 
 ## License
 

@@ -3,7 +3,7 @@ namespace BD2Territory
 {
  public static class TerritoryIdentity
  {
-  public const string RuntimeName="BD2Territory.Runtime23";
+  public const string RuntimeName="BD2Territory.Runtime24";
   public static string DataRoot=>System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"BD2Territory");
   public static bool IsGameProcessName(string name)=>string.Equals(name,"BrownDust II",StringComparison.OrdinalIgnoreCase)||string.Equals(name,"BrownDust II.exe",StringComparison.OrdinalIgnoreCase);
  }
@@ -36,7 +36,7 @@ namespace BD2Territory
   public bool Ready{get;set;}public bool Enabled{get;set;}public string OwnerId{get;set;}="";public string Scene{get;set;}="";public string Reason{get;set;}="等待连接";public string Error{get;set;}="";public string Target{get;set;}="";public string Network{get;set;}="";
   public string FarmState{get;set;}="";
   public int RetryTargets{get;set;}public int Trees{get;set;}public int Ores{get;set;}public int Mature{get;set;}public int Fields{get;set;}public int EmptyFields{get;set;}
-  public int GatherReplies{get;set;}public int ReceivedItems{get;set;}public long Spent{get;set;}public int BatchSeedId{get;set;}public int BatchPlanted{get;set;}public int CompletedBatches{get;set;}
+  public int GatherReplies{get;set;}public int ReceivedItems{get;set;}public long Spent{get;set;}public int BatchSeedId{get;set;}public int BatchPlanted{get;set;}public int BatchTotal{get;set;}public int CompletedBatches{get;set;}
   public RecipeOption[] Seeds{get;set;}=new RecipeOption[0];public int ActiveFixedSeedId{get;set;}
   public RecipeOption[] Recipes{get;set;}=new RecipeOption[0];public int ActiveRecipeId{get;set;}
   public long SoldItems{get;set;}public long SaleCurrency{get;set;}public string SalesState{get;set;}="";
