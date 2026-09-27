@@ -22,6 +22,8 @@ namespace BD2Territory.Runtime
   private volatile TerritoryControl control=new TerritoryControl();private volatile TerritorySnapshot latest=new TerritorySnapshot();
   private UIBase[] surfaces=new UIBase[0];private LifeFarmFieldObject[] farms=new LifeFarmFieldObject[0];private LifeGatheringObject[] nodes=new LifeGatheringObject[0];
   private PlayerController player;private PlayerMoveController move;private LifePlayerToolEquipmentController tool;private LifeFarmingUIPanel panel;private LifeFarmFieldObject targetFarm;private LifeGatheringObject targetNode;
+  private readonly TerritoryWorkCycle workCycle=new TerritoryWorkCycle();
+  private string lastWorkPhase="";
   private readonly GatheringProgress gathering=new GatheringProgress();private bool gatheringReposition;
   private readonly NavigationProgress navigation=new NavigationProgress();private readonly List<Vector3> triedDestinations=new List<Vector3>();
   private readonly InteractionProgress interaction=new InteractionProgress();
@@ -64,7 +66,7 @@ namespace BD2Territory.Runtime
     var ctx=field==null?null:B.Read("Field.Context",field);tool=ctx==null?null:ctx.GetType().GetMethods().Single(m=>m.Name=="GetTickBase"&&m.IsGenericMethod&&m.GetParameters().Length==0).MakeGenericMethod(typeof(LifePlayerToolEquipmentController)).Invoke(ctx,null) as LifePlayerToolEquipmentController;
     terrainController=ctx==null?null:ctx.GetType().GetMethods().Single(m=>m.Name=="GetTickBase"&&m.IsGenericMethod&&m.GetParameters().Length==0).MakeGenericMethod(typeof(FieldEvent.Life.LifeChunkController)).Invoke(ctx,null) as FieldEvent.Life.LifeChunkController;
     s.Ready=player!=null&&move!=null&&tool!=null&&surfaces.Any(v=>v is AvatarLifeGameFieldDefaultUI||v is AvatarLifeHousingEditUI||v is AvatarLifeLevelUpPopupUI||v is AvatarLifeNewItemPopupUI);
-    if(farmScene!=s.Scene){farmScene=s.Scene;gatheringStands.Clear();emptyProgress.Clear();network.ClearEvidence();failures.Clear();skip.Clear();ResetLocalRecovery();}
+    if(farmScene!=s.Scene){workCycle.Reset();farmScene=s.Scene;gatheringStands.Clear();emptyProgress.Clear();network.ClearEvidence();failures.Clear();skip.Clear();ResetLocalRecovery();}
     RefreshWorld(now);SettleReceipt();SettleCooking();SettleSales();s.SoldItems=sales==null?0:sales.ConfirmedItems;s.SaleCurrency=sales==null?0:sales.ConfirmedCurrency;s.SalesState=sales==null?"":sales.State;s.Cooked=cooking==null?0:cooking.ConfirmedTotal;s.CookingState=cooking==null?"":cooking.State;
     var c=control??new TerritoryControl();s.OwnerId=c.OwnerId;
     s.Trees=nodes.Count(n=>Harvestable(n)&&Kind(n)==1);s.Ores=nodes.Count(n=>Harvestable(n)&&Kind(n)==2);s.Mature=nodes.Count(n=>Harvestable(n)&&Kind(n)==3);s.RetryTargets=nodes.Count(n=>Harvestable(n)&&failures.TryGetValue(ResourceKey(n),out var retry)&&retry.Failures>0);
@@ -111,22 +113,46 @@ namespace BD2Territory.Runtime
     var moveState=B.Read("Field.MoveState",field)?.ToString();if(moveState=="DontMove"||moveState=="Anchored"){s.Reason="等待游戏恢复角色移动";Publish(s);return;}
     if(now-lastInput<TimeSpan.FromMilliseconds(c.IntervalMs).Ticks){WarmLocalGrid();s.Reason=lastReason;Publish(s);return;}
     // Finish a damaged node before switching tasks; a partially damaged resource heals after inactivity.
-    if(targetNode!=null&&Harvestable(targetNode)&&Enabled(Kind(targetNode),c)){Gather(s,now);Publish(s);return;}targetNode=null;
+    if(targetNode!=null&&Harvestable(targetNode)&&Enabled(Kind(targetNode),c)&&workCycle.AcceptsResource(ResourceKey(targetNode))){Gather(s,now);Publish(s);return;}targetNode=null;
+    // Finish already submitted transactions before choosing any new phase.
     if(SalesBusy()){SalesTick(s,c,now);Publish(s);return;}
-    if(CookingTick(s,c,now)){Publish(s);return;}
-    if(SalesTick(s,c,now)){Publish(s);return;}
-    if(c.Farming&&crops.Length>0)
+    if(CookingBusy()){CookingTick(s,c,now);Publish(s);return;}
+    // Preserve overflow handling during long gathering passes. This does not
+    // reset the workset or open planting early; enabled cooking still comes first.
+    var surplus=UrgentSurplus(c,now);
+    if(surplus.Length>0){if(CookingTick(s,c,now)||SalesTick(s,c,now,surplus)){Publish(s);return;}}
+    var resources=nodes.Where(n=>Harvestable(n)&&Enabled(Kind(n),c)&&Allowed(n,now)).Select(ResourceKey).ToArray();
+    var emptyFields=c.Farming&&crops.Length>0?farms.Where(f=>Empty(f)&&Allowed(f,now)).ToArray():new LifeFarmFieldObject[0];
+    var previousPhase=workCycle.Phase;var phase=workCycle.Advance(resources,emptyFields.Select(FarmKey));
+    if(phase==TerritoryWorkPhase.Gathering)
     {
+     targetFarm=null;targetNode=SelectResource(c,now);
+     if(targetNode!=null)Gather(s,now);else s.Reason="本轮采集尚未结束，继续处理成熟资源";
+     Publish(s);return;
+    }
+    if(phase==TerritoryWorkPhase.Planting)
+    {
+     if(previousPhase!=TerritoryWorkPhase.Planting){crops=ReadPlantingCrops(progress.RecipeId,progress.FixedSeedId);lastCrops=now;s.Crops=crops;}
      var crop=crops.Single(x=>x.SeedId==RecipeBatchPlanner.Choose(progress,crops));
-     if(s.EmptyFields>0&&PlantingTransaction.WithinBudget(progress,owner,c.PlantingBudget,crop.Price,1))
+     if(PlantingTransaction.WithinBudget(progress,owner,c.PlantingBudget,crop.Price,1))
      {
-      if(targetFarm==null||!Empty(targetFarm)||!Allowed(targetFarm,now))targetFarm=farms.Where(f=>Empty(f)&&Allowed(f,now)).OrderBy(f=>(f.GetFieldWorldCenter()-player.transform.position).sqrMagnitude).FirstOrDefault();
+      if(targetFarm==null||!Empty(targetFarm)||!Allowed(targetFarm,now)||!workCycle.AcceptsField(FarmKey(targetFarm)))
+       targetFarm=emptyFields.Where(f=>workCycle.AcceptsField(FarmKey(f))).OrderBy(f=>(f.GetFieldWorldCenter()-player.transform.position).sqrMagnitude).FirstOrDefault();
       if(targetFarm!=null){Plant(s,crop,now);Publish(s);return;}
      }
+     // Nothing affordable in this planting pass. Do not wait on a field forever
+     // or clear its native ownership; gathering stays available in the next pass.
+     workCycle.Planted(emptyFields.Select(FarmKey));
+     phase=workCycle.Advance(resources,new string[0]);
     }
-    targetFarm=null;targetNode=SelectResource(c,now);
-    if(targetNode!=null){Gather(s,now);}
-    else if(c.Farming&&crops.Length>0&&!PlantingTransaction.WithinBudget(progress,owner,c.PlantingBudget,crops.Single(x=>x.SeedId==progress.SeedId).Price,1))s.Reason="剩余预算不足继续播种；仍可采集和收获";
+    targetFarm=null;
+    if(phase==TerritoryWorkPhase.Processing)
+    {
+     if(CookingTick(s,c,now)){Publish(s);return;}
+     if(SalesTick(s,c,now)){Publish(s);return;}
+     workCycle.FinishProcessing();
+    }
+    if(c.Farming&&crops.Length>0&&!PlantingTransaction.WithinBudget(progress,owner,c.PlantingBudget,crops.Single(x=>x.SeedId==RecipeBatchPlanner.Choose(progress,crops)).Price,1))s.Reason="剩余预算不足继续播种；仍可采集和收获";
     else s.Reason=c.Farming&&s.EmptyFields==0?"等待空田或作物成熟；按实际农田分批播种":"等待作物自然成熟或资源刷新";
     if(targetNode==null)WarmLocalGrid();
     if(targetNode==null&&s.RetryTargets>0)s.Reason="待重试资源 "+s.RetryTargets+" 个，保留目标并定期重新检测";
@@ -134,7 +160,7 @@ namespace BD2Territory.Runtime
    }catch(Exception e){fault=e.GetBaseException().Message;try{Release();}catch{}s.Enabled=false;s.Error=fault;s.Reason="已暂停："+fault;Publish(s);}
   }
   private void RefreshFarmSnapshot(TerritorySnapshot s){s.Fields=farms.Length;s.EmptyFields=farms.Count(Empty);s.FarmState=FarmDiagnostic();}
-  private void Publish(TerritorySnapshot s){if(s.FarmState.Length==0)try{RefreshFarmSnapshot(s);}catch(Exception e){s.FarmState="农田状态暂不可读取："+e.GetBaseException().Message;}if(s.Reason!=lastReason){lastReason=s.Reason;LocalStorage.Log(s.Reason);}latest=s;}
+  private void Publish(TerritorySnapshot s){s.WorkPhase=(CookingBusy()||SalesBusy()?TerritoryWorkPhase.Processing:workCycle.Phase).ToString();s.WorkRemaining=CookingBusy()||SalesBusy()?0:workCycle.Remaining;if(s.Enabled&&s.WorkPhase!=lastWorkPhase){lastWorkPhase=s.WorkPhase;LocalStorage.Log("工作阶段 "+s.WorkPhase+" remaining="+s.WorkRemaining);}if(s.FarmState.Length==0)try{RefreshFarmSnapshot(s);}catch(Exception e){s.FarmState="农田状态暂不可读取："+e.GetBaseException().Message;}if(s.Reason!=lastReason){lastReason=s.Reason;LocalStorage.Log(s.Reason);}latest=s;}
   private static bool Enabled(int kind,TerritoryControl c)=>kind==1?c.Logging:kind==2?c.Mining:kind==3&&c.Farming;
   private bool Allowed(Component c,long now)=>(!skip.TryGetValue(c.GetInstanceID(),out var until)||now>=until)&&(!(c is LifeGatheringObject n)||!failures.TryGetValue(ResourceKey(n),out var f)||f.Available(now));
   private static string ResourceKey(LifeGatheringObject n)
@@ -158,7 +184,7 @@ namespace BD2Territory.Runtime
    var from=player.transform.position;
    var available=nodes.Where(n=>Harvestable(n)&&Enabled(Kind(n),c)).ToArray();
    foreach(var n in available){var key=ResourceKey(n);if(!failures.TryGetValue(key,out var memory))failures[key]=memory=new TargetFailureMemory();memory.Seen(now);}
-   var eligible=available.Where(n=>Allowed(n,now)).ToArray();
+   var eligible=available.Where(n=>Allowed(n,now)&&workCycle.AcceptsResource(ResourceKey(n))).ToArray();
    // Reserve every third selection for an overdue resource. Repeated crop/tree spawns cannot starve ores.
    var review=eligible.Where(n=>failures[ResourceKey(n)].ReviewDue(now)).OrderBy(n=>failures[ResourceKey(n)].WaitingSince).ThenBy(n=>Vector3.Distance(from,n.transform.position)).FirstOrDefault();
    var bestNode=review!=null&&resourceSelections%3==2?review:eligible.OrderBy(n=>Math.Max(0,Vector3.Distance(from,n.transform.position)-(Kind(n)==3?2:0))).FirstOrDefault();
@@ -328,6 +354,7 @@ namespace BD2Territory.Runtime
    {
     // A naturally completed action releases ownership without sending CancelAutoUseTool.
     ownsTool=false;protectResources=false;
+    if(hp<=0&&activeTargetKey.Length>0)workCycle.Gathered(activeTargetKey);
     if(gathering.TargetProgressed)
     {gatheringStands.Succeeded(gathering.Target);if(activeTargetKey.Length>0)failures.Remove(activeTargetKey);}
     else if(targetNode!=null&&Harvestable(targetNode))
@@ -508,7 +535,7 @@ namespace BD2Territory.Runtime
   }
   private void Release()
   {
-   StopMotion();ResetLocalRecovery();if(farmStage>0&&farmStage<4)CloseOwnedPanel();
+   workCycle.Reset();lastWorkPhase="";StopMotion();ResetLocalRecovery();if(farmStage>0&&farmStage<4)CloseOwnedPanel();
    // A submitted operation outlives its UI phase. Keep its persisted intent until an authoritative result arrives.
    farmStage=0;targetFarm=null;targetNode=null;gathering.Reset();gatheringReposition=false;navigation.Reset();interaction.Reset();triedDestinations.Clear();network.ForgetUnsentArm();
   }
@@ -516,7 +543,7 @@ namespace BD2Territory.Runtime
   {
    var reply=network.LastPlantReply;if(progress==null||reply==null||!reply.RequestMatches||(!reply.Accepted&&!reply.Rejected))return;
    var next=PlantingTransaction.Settle(progress,reply);if(ReferenceEquals(next,progress))return;
-   SaveProgress(next);CloseOwnedPanel();lastInput=DateTime.UtcNow.Ticks;lastCrops=0;lastWorldRead=0;RefreshWorld(lastInput);
+   SaveProgress(next);workCycle.Planted(reply.Keys);CloseOwnedPanel();lastInput=DateTime.UtcNow.Ticks;lastCrops=0;lastWorldRead=0;RefreshWorld(lastInput);
   }
   private static RecipeBatchProgress LoadProgress(string path,string key)
   {
@@ -528,7 +555,7 @@ namespace BD2Territory.Runtime
    var planted=world.SelectMany(w=>w.Object.Where(o=>o.InnerObject.Count==1&&o.InnerObject[0].ObjectId==progress.PendingSeed&&o.InnerObject[0].Status>0).Select(o=>TerritoryNetwork.Key(w.ChunkId,o))).ToArray();
    if(!PlantingTransaction.ValidKeys(progress.PendingKeys)||!progress.PendingKeys.All(k=>planted.Count(p=>p==k)==1))throw new InvalidOperationException("上次整批播种结果无法全部确认；保留进度，避免重复付款");
    var next=PlantingTransaction.Settle(progress,new PlantingReply{Token=progress.PendingToken,Keys=progress.PendingKeys,Seed=progress.PendingSeed,Cost=progress.PendingCost,RequestMatches=true,Accepted=true});
-   SaveProgress(next);CloseOwnedPanel();lastCrops=0;lastWorldRead=0;RefreshWorld(DateTime.UtcNow.Ticks);
+   var confirmed=progress.PendingKeys;SaveProgress(next);workCycle.Planted(confirmed);CloseOwnedPanel();lastCrops=0;lastWorldRead=0;RefreshWorld(DateTime.UtcNow.Ticks);
   }
   private void SaveProgress(RecipeBatchProgress next)
   {LocalStorage.WriteJsonAtomically(progressPath,next);progress=next;}

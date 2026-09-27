@@ -1,3 +1,55 @@
+# BD2 Territory v0.3.11-beta.1
+
+## 简体中文
+
+### 更新内容
+
+- 修复采集和种植交替过于频繁：先收完本轮成熟资源，再集中批量播种。
+- 一轮目标保持有限，新刷新资源留到下一轮；播种期间不再为了新成熟作物来回切换。
+- 分散农田仍按游戏实际预览连续播种，无需100格。失败目标保留重试，预算不足也不阻塞采集。
+- 显示当前阶段和剩余目标；保留配方比例、固定作物、费用核对及超阈值库存处理。
+
+### 下载
+
+| 版本 | 运行环境 | 建议 |
+| --- | --- | --- |
+| **Portable** | 自带 .NET，无需另装运行库 | 大多数用户 |
+| **Lite** | 需要 .NET Desktop Runtime 8 x64 | 已安装桌面运行库、希望减小下载体积 |
+
+两版功能相同，内置简体中文／English。EXE 可独立使用；ZIP 附带双语说明与许可证。用 `SHA256SUMS.txt` 核对下载。
+
+### 升级
+
+暂停并关闭旧工具，打开新版，点击「连接／更新组件」后开始。已有设置和待确认播种记录保留；无需重摆农田，也不需要开启新选项。
+
+作者发布版免费。第三方收费不代表作者参与、背书或提供服务。[使用说明与风险提示](https://github.com/MadestSamurai/bd2-territory/blob/main/README.md)。
+
+## English
+
+### Changes
+
+- Fixes frequent switching between harvesting and planting. Finish a gathering pass before planting in batches.
+- Each pass keeps a finite target set. New resources wait for the next pass, and newly mature crops do not interrupt planting.
+- Disconnected fields still use consecutive native preview groups, with no 100-field requirement. Failed targets remain queued for retry; an exhausted planting budget does not block gathering.
+- Shows the current phase and remaining targets. Preserves recipe ratios, fixed crops, cost checks and surplus-inventory handling.
+
+### Downloads
+
+| Build | Runtime | Recommended for |
+| --- | --- | --- |
+| **Portable** | Includes .NET; no separate runtime needed | Most users |
+| **Lite** | Requires .NET Desktop Runtime 8 x64 | Smaller download when the desktop runtime is installed |
+
+Both builds have identical features and include Simplified Chinese / English. EXEs run independently; ZIPs include bilingual documentation and licenses. Verify downloads with `SHA256SUMS.txt`.
+
+### Upgrade
+
+Pause and close the old tool, open this version and select **Connect / update component**, then start. Existing settings and unresolved planting records are preserved. No layout changes or new option are needed.
+
+Official releases are free. Third-party fees do not imply the author's involvement, endorsement or support. [Usage and risk notice](https://github.com/MadestSamurai/bd2-territory/blob/main/README.en.md).
+
+---
+
 # BD2 Territory v0.3.10-beta.1
 
 ## 简体中文

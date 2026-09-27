@@ -20,7 +20,7 @@ If a network interruption leaves the outcome unknown, the tool pauses and preser
 
 ## Download
 
-Current version: **0.3.10-beta.1**. One application includes Simplified Chinese and English. Start with a small planting budget and cooking batch when evaluating this beta.
+Current version: **0.3.11-beta.1**. One application includes Simplified Chinese and English. Start with a small planting budget and cooking batch when evaluating this beta.
 
 | Edition | Runtime | Recommended for |
 | --- | --- | --- |
@@ -64,6 +64,14 @@ Under **Planting and cooking**, choose **Balance a recipe** or **Plant a fixed c
 
 A* refines narrow passages when the coarse grid fails. Ground checks and discovered routes are cached and warmed incrementally while idle; upcoming edges are checked live. Scene, layout, character and local resource changes invalidate the relevant cache. NavMesh remains optional and off by default.
 
+## Separate gathering and planting passes
+
+The tool first finishes the mature, enabled and currently eligible resources captured at the start of a pass. It then plants the available field groups consecutively, followed by enabled cooking and sales. A few newly empty cells no longer interrupt harvesting. Crops that mature and resources that respawn during planting wait for the next pass.
+
+Each gathering pass has a finite set of targets, so continuous respawns cannot postpone planting indefinitely. Unreachable targets keep their existing cooldown and retry policy without blocking the whole farm. Gathering continues when the planting budget is exhausted. The window shows the current phase and remaining targets.
+
+Planting still uses actual native preview groups: no 100-field or connected-layout requirement. Recipe balancing, fixed crops, spending and receipt checks are preserved. When automatic surplus sales are enabled, excess inventory can still be processed between completed actions, trying enabled cooking first. This preserves the current pass instead of restarting gathering or opening planting early.
+
 ## Disconnected fields and recipe balance
 
 No layout change or 100-field farm is required. The tool visits available field areas and confirms each actual native batch before moving on. Smaller groups and single isolated fields are supported. If the game previews several areas together, they are submitted together.
@@ -105,7 +113,7 @@ Requires Windows, PowerShell and .NET 8 SDK. From this repository root:
 .\package.ps1 -Locked
 ```
 
-Packages go to `dist/v0.3.10-beta.1/`. [Development](docs/DEVELOPMENT.md) · [Localization](docs/LOCALIZATION.md) · [Publication style](docs/PUBLICATION_STYLE.md) · [Release notes](docs/RELEASE_NOTES.md)
+Packages go to `dist/v0.3.11-beta.1/`. [Development](docs/DEVELOPMENT.md) · [Localization](docs/LOCALIZATION.md) · [Publication style](docs/PUBLICATION_STYLE.md) · [Release notes](docs/RELEASE_NOTES.md)
 
 ## License
 
