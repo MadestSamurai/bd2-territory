@@ -22,7 +22,10 @@ static class SurplusSalesCases
   Reject(()=>SurplusSales.Validate(Pending(),"other"));
   state=Pending();SurplusSales.Confirm(state,new(){Token="token",Rejected=true,Matches=true},new Dictionary<long,int>(),0);C(state.State=="rejected"&&state.ConfirmedItems==0,"rejection is not a sale");
   C(SurplusSales.Matches(lines,lines),"native request matches");C(!SurplusSales.Matches(lines,new[]{new SaleLine{Index=1,Group=1,Row=2,Count=100}}),"over-sale request rejected");
-  C(!new TerritorySettings{SellThreshold=9901}.ValidSettings()&&!new TerritorySettings{SellThreshold=99}.ValidSettings(),"control channel enforces limits");C(new TerritorySettings().SellThreshold==9900&&!new TerritorySettings().AutoSell,"safe defaults");
+  C(!new TerritorySettings{SellThreshold=9901}.ValidSettings()&&!new TerritorySettings{SellThreshold=99}.ValidSettings(),"control channel enforces limits");C(new TerritorySettings().SellThreshold==9900&&new TerritorySettings{AutoSell=false}.AutoSell,"safe defaults");
+  C(SurplusSales.ProbeDue(100,100,1,0),"new receipt checks capacity before the next target");
+  C(!SurplusSales.ProbeDue(100,100,1,1),"idle repeated frame reuses probe");
+  C(SurplusSales.ProbeDue(TimeSpan.FromSeconds(6).Ticks,0,1,1),"external stock changes are refreshed");
   Console.WriteLine("Surplus sales: "+n+" checks passed");
  }
 }

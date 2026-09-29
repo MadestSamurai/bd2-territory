@@ -18,7 +18,7 @@ namespace BD2Territory.Runtime
   private AvatarLifeHousingEditUI housing;private AvatarLifeHousingEditUI_EditUI editor;
   private readonly Dictionary<string,List<LayoutItem>> plannedCells=new Dictionary<string,List<LayoutItem>>();
   private static T ReadLayoutFile<T>(string path) where T:class
-  {if(!File.Exists(path))return null;using(var f=new FileStream(path,FileMode.Open,FileAccess.Read,FileShare.ReadWrite|FileShare.Delete)){if(f.Length>2000000)throw new InvalidOperationException("布局文件超过 2 MB");return (T)new DataContractJsonSerializer(typeof(T)).ReadObject(f);}}
+  {if(BD2.LocalIpc.RuntimeFiles.Handles(path)){var bytes=BD2.LocalIpc.RuntimeFiles.Read(path);if(bytes==null)return null;if(bytes.Length>2000000)throw new InvalidDataException("Layout request exceeds 2 MB");using(var memory=new MemoryStream(bytes))return (T)new DataContractJsonSerializer(typeof(T)).ReadObject(memory);}if(!File.Exists(path))return null;using(var f=new FileStream(path,FileMode.Open,FileAccess.Read,FileShare.ReadWrite|FileShare.Delete)){if(f.Length>2000000)throw new InvalidOperationException("布局文件超过 2 MB");return (T)new DataContractJsonSerializer(typeof(T)).ReadObject(f);}}
   private GroundChunkManager LayoutGround()=>UnityEngine.Object.FindObjectsOfType<GroundChunkManager>().FirstOrDefault(B.Active);
   private LayoutWorld CaptureLayoutWorld(long now)
   {

@@ -8,12 +8,14 @@ public partial class App : Application
  private Mutex? single;
  protected override async void OnStartup(StartupEventArgs e)
  {
+  DispatcherUnhandledException+=(_,args)=>TerritoryDiagnostics.Write(TerritoryIdentity.DataRoot,"desktop.unhandled",error:args.Exception);
+  AppDomain.CurrentDomain.UnhandledException+=(_,args)=>TerritoryDiagnostics.Write(TerritoryIdentity.DataRoot,"process.unhandled",error:args.ExceptionObject as Exception);
   base.OnStartup(e);ShutdownMode=ShutdownMode.OnExplicitShutdown;
   try
   {
    if(e.Args.Length==2&&e.Args[0]=="--identity")
    {
-    File.WriteAllText(e.Args[1],JsonSerializer.Serialize(new{version="0.3.11-beta.1",languages=new[]{"zh-CN","en-US"},automaticCooking=true,automaticSurplusSales=true,defaultAutoSell=false,defaultSellThreshold=9900,minSellThreshold=100,maxSellThreshold=9900,defaultCooking=false,defaultUseNavMesh=false,defaultNavigation="astar",defaultCookingBatch=100,runtime=TerritoryIdentity.RuntimeName,toolFingerprint=HookCompiler.ToolFingerprint,compatibility="local-interface-adaptation",recipe="活力面疙瘩",dynamicRecipes=true,fixedCropPlanting=true,adaptiveGrid=true,navigationCache=true,layoutImport=true,layoutTemplates=3,phasedWorkCycle=true,dynamicPlantingBatch=true,plantingBatchMode="native-preview",requiresConnectedFarm=false,ratio="5:3:2",defaultIntervalMs=500,defaultPlantingBudget=1400,automaticStart=false}));Shutdown();return;
+    File.WriteAllText(e.Args[1],JsonSerializer.Serialize(new{version=typeof(App).Assembly.GetName().Version!.ToString(3),languages=new[]{"zh-CN","en-US"},automaticCooking=true,automaticSurplusSales=true,defaultAutoSell=true,defaultSellThreshold=9900,minSellThreshold=100,maxSellThreshold=9900,defaultCooking=false,defaultUseNavMesh=false,defaultNavigation="astar",defaultCookingBatch=100,runtime=TerritoryIdentity.RuntimeName,toolFingerprint=HookCompiler.ToolFingerprint,compatibility="local-interface-adaptation",recipe="活力面疙瘩",dynamicRecipes=true,fixedCropPlanting=true,adaptiveGrid=true,navigationCache=true,layoutImport=true,layoutTemplates=3,phasedWorkCycle=true,dynamicPlantingBatch=true,plantingBatchMode="native-preview",requiresConnectedFarm=false,ratio="5:3:2",defaultIntervalMs=500,defaultPlantingBudget=1400,automaticStart=false}));Shutdown();return;
    }
    if(e.Args.Length==3&&e.Args[0]=="--check-client")
    {
@@ -25,6 +27,12 @@ public partial class App : Application
     if(e.Args[0]=="--smoke-en")System.Globalization.CultureInfo.CurrentUICulture=new System.Globalization.CultureInfo("en-US");
     var output=Path.GetFullPath(e.Args[1]);Directory.CreateDirectory(output);
     try{var window=new TerritoryWindow(Path.Combine(output,"isolated",Guid.NewGuid().ToString("N")));MainWindow=window;await window.SmokeAsync(output);Shutdown();}
+    catch(Exception ex){File.WriteAllText(Path.Combine(output,"failure.txt"),ex.ToString());Shutdown(1);}return;
+   }
+   if(e.Args.Length==2&&e.Args[0]=="--connection-smoke")
+   {
+    var output=Path.GetFullPath(e.Args[1]);Directory.CreateDirectory(output);
+    try{var window=new TerritoryWindow(Path.Combine(output,"isolated",Guid.NewGuid().ToString("N")));MainWindow=window;await window.ConnectionSmokeAsync(output);Shutdown();}
     catch(Exception ex){File.WriteAllText(Path.Combine(output,"failure.txt"),ex.ToString());Shutdown(1);}return;
    }
    single=new Mutex(true,"Local\\BD2Territory.Desktop",out bool first);

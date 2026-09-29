@@ -25,6 +25,7 @@ namespace BD2Territory
  public static class SurplusSales
  {
   public const int Minimum=100,Maximum=9900;
+  public static bool ProbeDue(long now,long last,int replies,int previousReplies)=>replies!=previousReplies||now-last>=TimeSpan.FromSeconds(5).Ticks;
   public static bool ValidThreshold(int value)=>value>=Minimum&&value<=Maximum;
   public static SaleLine[] Plan(IEnumerable<SaleStock> inventory,int threshold)
   {

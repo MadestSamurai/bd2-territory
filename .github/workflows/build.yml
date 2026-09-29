@@ -37,3 +37,30 @@ jobs:
             .build/**/failure.txt
             .build/**/results.json
           if-no-files-found: ignore
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: windows-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Download verified build assets and create release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run download $env:GITHUB_RUN_ID --name BD2Territory-win-x64 --dir dist
+          if ($LASTEXITCODE -ne 0) { throw 'Artifact download failed' }
+          $version = $env:GITHUB_REF_NAME.Substring(1)
+          $notes = "docs/release-$version.md"
+          if (!(Test-Path -LiteralPath $notes)) { throw "Release notes missing: $notes" }
+          $assets = @(Get-ChildItem dist -Recurse -File | Where-Object { $_.Extension -in '.exe','.zip' -or $_.Name -eq 'SHA256SUMS.txt' } | ForEach-Object FullName)
+          if ($assets.Count -ne 5) { throw 'Expected two EXEs, two ZIPs and checksums' }
+          $releaseArgs = @('--draft','--verify-tag','--title',"BD2 Territory $env:GITHUB_REF_NAME",'--notes-file',$notes)
+          if ($version.Contains('-')) { $releaseArgs += '--prerelease' }
+          gh release create $env:GITHUB_REF_NAME @assets @releaseArgs
+          if ($LASTEXITCODE -ne 0) { throw 'Release publication failed' }

@@ -315,6 +315,9 @@ namespace SharpMonoInjector
             ThrowIfNull(result, mono_assembly_close);
         }
 
+        public Action<string>? DiagnosticStage { get; set; }
+        private void ReportStage(string value) { try { DiagnosticStage?.Invoke(value); } catch { } }
+
         private IntPtr Execute(IntPtr address, params IntPtr[] args)
         {
             IntPtr retValPtr = Is64Bit
@@ -330,7 +333,10 @@ namespace SharpMonoInjector
             if (thread == IntPtr.Zero)
                 throw new InjectorException("Failed to create a remote thread", new Win32Exception(Marshal.GetLastWin32Error()));
 
+            var functionName = Exports.FirstOrDefault(e => e.Value == address).Key ?? "remote-call";
+            ReportStage(functionName + ".waiting");
             WaitResult result = Native.WaitForSingleObject(thread, -1);
+            ReportStage(functionName + ".returned");
 
             if (result == WaitResult.WAIT_FAILED)
                 throw new InjectorException("Failed to wait for a remote thread", new Win32Exception(Marshal.GetLastWin32Error()));

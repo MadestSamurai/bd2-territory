@@ -73,7 +73,7 @@
     <Border Background="White" CornerRadius="8" Padding="18" Margin="0,0,0,14">
      <StackPanel>
       <TextBlock Text="{DynamicResource SalesTitle}" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,12"/>
-      <WrapPanel><CheckBox x:Name="AutoSellBox" Content="{DynamicResource SalesEnabled}" Checked="SettingsChanged" Unchecked="SettingsChanged"/><TextBlock Text="{DynamicResource SalesRetain}" VerticalAlignment="Center" Margin="0,0,8,0"/><TextBox x:Name="SellThresholdBox" Width="84" LostFocus="SettingsChanged" AutomationProperties.Name="{DynamicResource SalesRetain}"/></WrapPanel>
+      <WrapPanel><TextBlock Text="{DynamicResource SalesEnabled}" VerticalAlignment="Center" Margin="0,0,16,0"/><TextBlock Text="{DynamicResource SalesRetain}" VerticalAlignment="Center" Margin="0,0,8,0"/><TextBox x:Name="SellThresholdBox" Width="84" LostFocus="SettingsChanged" AutomationProperties.Name="{DynamicResource SalesRetain}"/></WrapPanel>
       <TextBlock Text="{DynamicResource SalesHelp}" TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" Margin="0,8,0,0"/>
       <TextBlock x:Name="SalesText" TextWrapping="Wrap" Margin="0,8,0,0"/>
      </StackPanel>

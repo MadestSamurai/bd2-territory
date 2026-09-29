@@ -18,7 +18,7 @@ namespace BD2Territory.Runtime
  internal sealed partial class RuntimeEngine
  {
   private static RuntimeEngine current;private readonly Harmony patch=new Harmony("bd2.territory.inputs");private readonly TerritoryNetwork network=new TerritoryNetwork();
-  private readonly int pid=System.Diagnostics.Process.GetCurrentProcess().Id;private Timer timer;private int ioBusy;private bool stopped;
+  private readonly int pid=System.Diagnostics.Process.GetCurrentProcess().Id;private Timer timer;private int ioBusy;private bool stopped;private bool handoffRequested;
   private volatile TerritoryControl control=new TerritoryControl();private volatile TerritorySnapshot latest=new TerritorySnapshot();
   private UIBase[] surfaces=new UIBase[0];private LifeFarmFieldObject[] farms=new LifeFarmFieldObject[0];private LifeGatheringObject[] nodes=new LifeGatheringObject[0];
   private PlayerController player;private PlayerMoveController move;private LifePlayerToolEquipmentController tool;private LifeFarmingUIPanel panel;private LifeFarmFieldObject targetFarm;private LifeGatheringObject targetNode;
@@ -47,7 +47,7 @@ namespace BD2Territory.Runtime
   private void IO()
   {
    if(Interlocked.Exchange(ref ioBusy,1)!=0)return;
-   try{if(stopped)return;var path=Path.Combine(LocalStorage.DataRoot,"control.json");try{using(var f=new FileStream(path,FileMode.Open,FileAccess.Read,FileShare.ReadWrite|FileShare.Delete)){if(f.Length>16000)throw new IOException("控制文件过大");control=(TerritoryControl)new DataContractJsonSerializer(typeof(TerritoryControl)).ReadObject(f);}}catch(IOException){}catch(UnauthorizedAccessException){}catch(System.Runtime.Serialization.SerializationException){}
+   try{if(stopped)return;var path=Path.Combine(LocalStorage.DataRoot,"control.json");try{using(var f=new MemoryStream(BD2.LocalIpc.RuntimeFiles.Read(path)??new byte[0])){if(f.Length>16000)throw new IOException("控制文件过大");control=(TerritoryControl)new DataContractJsonSerializer(typeof(TerritoryControl)).ReadObject(f);}}catch(IOException){}catch(UnauthorizedAccessException){}catch(System.Runtime.Serialization.SerializationException){}
     LocalStorage.WriteJsonAtomically(Path.Combine(LocalStorage.DataRoot,"latest.json"),latest);Loader.WriteStatus("active","");
    }catch(Exception e){LocalStorage.Log("io "+e.Message);}finally{Interlocked.Exchange(ref ioBusy,0);}
   }
@@ -73,6 +73,7 @@ namespace BD2Territory.Runtime
     s.GatherReplies=network.GatherReplies;s.ReceivedItems=network.ReceivedItems;s.Network=network.Last;s.Spent=spent;
     ReadCatalog(s,c,now);
     if(LayoutTick(s,c,now)){Publish(s);return;}
+    if(handoffRequested){StopMove();s.Reason="等待当前操作结算后交接组件";Publish(s);return;}
     if(!c.Valid(now,pid)){Release();s.Reason="自动领地已停止";Publish(s);return;}
     if(owner!=c.OwnerId){Release();owner=c.OwnerId;fault="";network.ClearError();spent=0;account="";}
     if(!s.Ready){Release();s.Reason="请进入可走动的 Fantasia Territory 领地";Publish(s);return;}
@@ -107,6 +108,12 @@ namespace BD2Territory.Runtime
     if(farmStage>0){AdvancePlant(s,now);Publish(s);return;}
     if(progress.PendingToken.Length>0){ReconcilePending();s.Reason="已核对上次播种";Publish(s);return;}
     if(UnityEngine.Object.FindObjectsOfType<LifeFarmingUIPanel>().Any(B.Active)){StopMotion();s.Reason="请关闭手动播种界面后继续";Publish(s);return;}
+    // Capacity checks run before continuing a resource, walking or starting another
+    // gather pass. A new gather receipt invalidates the five-second idle probe cache.
+    if(SalesBusy()){SalesTick(s,c,now);Publish(s);return;}
+    if(CookingBusy()){CookingTick(s,c,now);Publish(s);return;}
+    var surplus=UrgentSurplus(c,now);
+    if(surplus.Length>0&&SalesTick(s,c,now,surplus)){Publish(s);return;}
     // Check owned walking every tick, independent of the configurable interval and target selection.
     if(ownsMove){ContinueWalk(s,now,c);Publish(s);return;}
     // Native tool motions may anchor the player. Observe the whole action above before any movement decision.
@@ -114,20 +121,14 @@ namespace BD2Territory.Runtime
     if(now-lastInput<TimeSpan.FromMilliseconds(c.IntervalMs).Ticks){WarmLocalGrid();s.Reason=lastReason;Publish(s);return;}
     // Finish a damaged node before switching tasks; a partially damaged resource heals after inactivity.
     if(targetNode!=null&&Harvestable(targetNode)&&Enabled(Kind(targetNode),c)&&workCycle.AcceptsResource(ResourceKey(targetNode))){Gather(s,now);Publish(s);return;}targetNode=null;
-    // Finish already submitted transactions before choosing any new phase.
-    if(SalesBusy()){SalesTick(s,c,now);Publish(s);return;}
-    if(CookingBusy()){CookingTick(s,c,now);Publish(s);return;}
-    // Preserve overflow handling during long gathering passes. This does not
-    // reset the workset or open planting early; enabled cooking still comes first.
-    var surplus=UrgentSurplus(c,now);
-    if(surplus.Length>0){if(CookingTick(s,c,now)||SalesTick(s,c,now,surplus)){Publish(s);return;}}
-    var resources=nodes.Where(n=>Harvestable(n)&&Enabled(Kind(n),c)&&Allowed(n,now)).Select(ResourceKey).ToArray();
+    var harvestTargets=nodes.Where(n=>Kind(n)==3&&Harvestable(n)&&Enabled(Kind(n),c)&&Allowed(n,now)).Select(ResourceKey).ToArray();
+    var resources=nodes.Where(n=>Kind(n)!=3&&Harvestable(n)&&Enabled(Kind(n),c)&&Allowed(n,now)).Select(ResourceKey).ToArray();
     var emptyFields=c.Farming&&crops.Length>0?farms.Where(f=>Empty(f)&&Allowed(f,now)).ToArray():new LifeFarmFieldObject[0];
-    var previousPhase=workCycle.Phase;var phase=workCycle.Advance(resources,emptyFields.Select(FarmKey));
-    if(phase==TerritoryWorkPhase.Gathering)
+    var previousPhase=workCycle.Phase;var phase=workCycle.Advance(harvestTargets,resources,emptyFields.Select(FarmKey));
+    if(phase==TerritoryWorkPhase.Harvesting||phase==TerritoryWorkPhase.Gathering)
     {
      targetFarm=null;targetNode=SelectResource(c,now);
-     if(targetNode!=null)Gather(s,now);else s.Reason="本轮采集尚未结束，继续处理成熟资源";
+     if(targetNode!=null)Gather(s,now);else s.Reason=phase==TerritoryWorkPhase.Harvesting?"收完本批作物后集中补种":"本轮采集尚未结束，继续处理成熟资源";
      Publish(s);return;
     }
     if(phase==TerritoryWorkPhase.Planting)
@@ -143,7 +144,7 @@ namespace BD2Territory.Runtime
      // Nothing affordable in this planting pass. Do not wait on a field forever
      // or clear its native ownership; gathering stays available in the next pass.
      workCycle.Planted(emptyFields.Select(FarmKey));
-     phase=workCycle.Advance(resources,new string[0]);
+     phase=workCycle.Advance(harvestTargets,resources,new string[0]);
     }
     targetFarm=null;
     if(phase==TerritoryWorkPhase.Processing)
@@ -559,6 +560,16 @@ namespace BD2Territory.Runtime
   }
   private void SaveProgress(RecipeBatchProgress next)
   {LocalStorage.WriteJsonAtomically(progressPath,next);progress=next;}
+  internal void PrepareHandoff(){handoffRequested=true;control=new TerritoryControl();StopMove();}
+  internal string HandoffBusy(){
+   if(ioBusy!=0)return "snapshot writer";
+   if(network.Waiting||Convert.ToInt32(B.Read("Network.QueuedHarvest",null))>0)return "harvest response";
+   if(tool!=null&&((bool)B.Read("Tool.Busy",tool)||ToolLoading()))return "native tool action";
+   if(progress!=null&&!string.IsNullOrEmpty(progress.PendingToken))return "planting receipt";
+   if(vehiclePending)return "vehicle transition";
+   if(SalesBusy())return "sale receipt";if(CookingBusy())return "cooking receipt";if(LayoutBusy())return "layout receipt";
+   return "";
+  }
   internal void Stop(){Release();stopped=true;timer?.Dispose();timer=null;current=null;network.Dispose();patch.UnpatchAll("bd2.territory.inputs");}
  }
 }

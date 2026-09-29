@@ -108,7 +108,7 @@ namespace BD2Territory.Runtime
      // A successful batch can cover multiple chunks while ObjectPlaceInfo in the response is singular.
      // Keep accepted request identities independently of the game's partially refreshed world cache.
      if(p.Gather!=null)foreach(var chunk in p.Gather.ObjectPlaceInfo)foreach(var obj in chunk.Object)n.harvested.Add(Key(chunk.ChunkId,obj));
-     if(count<=0)n.Error="采集回执没有物品奖励，请检查库存容量或目标状态";
+     if(count==0)LocalStorage.Log("采集已由服务器确认；本次无新增物品，继续处理库存余量和下一个目标");
     }
    }}catch(Exception e){n.Error="回执核对失败："+e.GetBaseException().Message;}
   }

@@ -12,15 +12,18 @@ A standalone Fantasia Territory assistant for BrownDust II on Windows. Automate 
 
 ## Sell surplus stock
 
-Enable **Sell excess automatically**, choose the quantity to keep per item (100–9900, default 9900), then start automation. Only the excess is sold; stock exactly at the threshold is retained. Selling can run on its own.
+Under **Surplus stock sales**, choose the quantity to keep per item (100–9900, default 9900), then start automation. Capacity protection is always enabled: only the excess is sold, and stock exactly at the threshold is retained. Selling can run on its own.
 
-Only territory materials, produce and meals explicitly listed by the game's territory shop are eligible. Locked items, buildings, decorations, equipment and attribute stones are excluded. Automatic cooking takes priority. Each batch waits for confirmation; the UI shows confirmed sales and territory currency earned. Disabled by default.
+Only territory materials, produce and meals explicitly listed by the game's territory shop are eligible. Locked items, buildings, decorations, equipment and attribute stones are excluded. Each batch waits for confirmation; the UI shows confirmed sales and territory currency earned. Harvest the current crop batch and replant before mining or logging. Full inventory or a gathering result with no new rewards does not stop gathering.
 
 If a network interruption leaves the outcome unknown, the tool pauses and preserves the record without resubmitting. Check the game inventory and logs. Thresholds, categories, locks, duplicate replies and current-client interface compilation have been checked; live selling has not been exercised for this release.
 
 ## Download
 
-Current version: **0.3.11-beta.1**. One application includes Simplified Chinese and English. Start with a small planting budget and cooking batch when evaluating this beta.
+Current stable version: **0.4.0**. One application includes Simplified Chinese and English, switchable from the top-right corner.
+
+Connection freeze fix: state and diagnostic reads run in the background, polling pauses while connecting, and pause/close no longer wait on the pipe lock. `connection.log` is available from the start of each attempt.
+
 
 | Edition | Runtime | Recommended for |
 | --- | --- | --- |
@@ -37,7 +40,7 @@ Windows x64 only. Both editions have the same features. Each EXE works on its ow
 4. Set the planting budget and select **Start automation**. Defaults: budget 1400, interval 500ms. A budget of 0 is unlimited.
 5. Select **Pause** or close the tool to stop further operations. Submitted actions still finish normally.
 
-To update from the private territory 0.2.0 tool, pause the old tool before connecting; the game can stay open. Switching from another standalone tool or the private workbench requires a normal game restart. Opening the EXE does not connect or start automation.
+Pause and close the previous tool, then open this version and connect. Standalone tools that support component handoff can switch within the same game process; older components without handoff support may require one normal game restart. Opening the EXE does not connect or start automation.
 
 ## Features and settings
 
@@ -113,8 +116,14 @@ Requires Windows, PowerShell and .NET 8 SDK. From this repository root:
 .\package.ps1 -Locked
 ```
 
-Packages go to `dist/v0.3.11-beta.1/`. [Development](docs/DEVELOPMENT.md) · [Localization](docs/LOCALIZATION.md) · [Publication style](docs/PUBLICATION_STYLE.md) · [Release notes](docs/RELEASE_NOTES.md)
+Packages go to `dist/v0.3.14-beta.1/`. [Development](docs/DEVELOPMENT.md) · [Localization](docs/LOCALIZATION.md) · [Publication style](docs/PUBLICATION_STYLE.md) · [Release notes](docs/RELEASE_NOTES.md)
 
 ## License
 
 Project code is licensed under [MIT](LICENSE). See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and `licenses/` for dependencies. Game content belongs to its respective rights holders.
+
+## Connection and tool switching
+
+When upgrading from an older release for the first time, close the old tools and restart the game once. These updated tools can then update and switch within the same game process: pending game operations finish before control changes. Settings and records are retained. Live communication uses local named pipes. Modules used by the daily workflow are coordinated separately by its scheduler.
+
+Excess territory stock protection is always on; only the retained quantity is configurable (100–9900). Harvest a crop batch and replant before mining or logging.

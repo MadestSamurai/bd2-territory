@@ -29,12 +29,16 @@ foreach($flavor in @('Portable','Lite')){
     $identityPath=Join-Path $check 'identity.json'
     RunCheck @('--identity',('"'+$identityPath+'"'))
     $identity=Get-Content $identityPath -Raw | ConvertFrom-Json
-    if($identity.runtime -ne 'BD2Territory.Runtime25' -or $identity.compatibility -ne 'local-interface-adaptation' -or $identity.defaultIntervalMs -ne 500 -or $identity.defaultNavigation -ne 'astar' -or $identity.defaultUseNavMesh -ne $false){throw 'Embedded identity differs from release'}
+    if($identity.version -ne $Version -or $identity.runtime -ne 'BD2Territory.Runtime25' -or $identity.compatibility -ne 'local-interface-adaptation' -or $identity.defaultIntervalMs -ne 500 -or $identity.defaultNavigation -ne 'astar' -or $identity.defaultUseNavMesh -ne $false){throw 'Embedded identity differs from release'}
     RunCheck @('--smoke',('"'+$check+'"'))
     $ui=Get-Content (Join-Path $check 'results.json') -Raw | ConvertFrom-Json
     if($ui.status -ne 'pass' -or $ui.assertions.Count -lt 34){throw 'Packaged UI regression failed'}
+    $connectionCheck=Join-Path $check 'connection'
+    RunCheck @('--connection-smoke',('"'+$connectionCheck+'"'))
+    $connection=Get-Content (Join-Path $connectionCheck 'connection-smoke.json') -Raw | ConvertFrom-Json
+    if($connection.status -ne 'pass' -or $connection.assertions.Count -lt 18 -or $connection.gameRequests -ne 0){throw 'Packaged connection responsiveness regression failed'}
     RunCheck @('--smoke-en',('"'+(Join-Path $check 'english-system')+'"'))
-    if(!$identity.automaticSurplusSales -or $identity.defaultAutoSell -or $identity.defaultSellThreshold -ne 9900 -or $identity.minSellThreshold -ne 100 -or $identity.maxSellThreshold -ne 9900){throw 'Surplus sale identity differs from release'}
+    if(!$identity.automaticSurplusSales -or !$identity.defaultAutoSell -or $identity.defaultSellThreshold -ne 9900 -or $identity.minSellThreshold -ne 100 -or $identity.maxSellThreshold -ne 9900){throw 'Surplus sale identity differs from release'}
     if(!$identity.phasedWorkCycle -or !$identity.dynamicPlantingBatch -or $identity.plantingBatchMode -ne 'native-preview' -or $identity.requiresConnectedFarm -or $identity.ratio -ne '5:3:2' -or $identity.automaticStart){throw 'Recipe or automatic start identity differs'}
     if($ClientManaged){
         $clientReport=Join-Path $check 'client.json'
@@ -59,11 +63,11 @@ foreach($flavor in @('Portable','Lite')){
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'licenses') -Destination $bundle -Recurse
     Compress-Archive -LiteralPath $bundle -DestinationPath $zipPath -CompressionLevel Optimal
     $assets+=@($exePath,$zipPath)
-    $flavors += [ordered]@{name=$flavor;selfContained=($selfContained -eq 'true');runtimeRequirement=$(if($flavor -eq 'Lite'){'.NET Desktop Runtime 8 x64'}else{'none'});exeBytes=(Get-Item $exePath).Length;uiAssertions=$ui.assertions.Count;toolFingerprint=$identity.toolFingerprint}
+    $flavors += [ordered]@{name=$flavor;selfContained=($selfContained -eq 'true');runtimeRequirement=$(if($flavor -eq 'Lite'){'.NET Desktop Runtime 8 x64'}else{'none'});exeBytes=(Get-Item $exePath).Length;uiAssertions=$ui.assertions.Count;connectionAssertions=$connection.assertions.Count;dispatcherMaximumGapMs=$connection.dispatcherMaximumGapMs;toolFingerprint=$identity.toolFingerprint}
 }
 if($flavors[1].exeBytes -ge $flavors[0].exeBytes){throw 'Lite must be smaller than Portable'}
 @(foreach($file in $assets){"$((Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash.ToLowerInvariant())  $([IO.Path]::GetFileName($file))"}) | Set-Content -LiteralPath (Join-Path $output 'SHA256SUMS.txt') -Encoding ascii
-[ordered]@{version=$Version;runtime=$identity.runtime;compatibility=$identity.compatibility;flavors=$flavors;languages=@('zh-CN','en-US');prerelease=$true;gameLibrariesBundled=$false;clientVersionLock=$false;runtimeVerification='source_implemented_pending_runtime'} | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $output 'release.json') -Encoding UTF8
+[ordered]@{version=$Version;runtime=$identity.runtime;compatibility=$identity.compatibility;flavors=$flavors;languages=@('zh-CN','en-US');prerelease=($Version -match "-");gameLibrariesBundled=$false;clientVersionLock=$false;runtimeVerification='source_implemented_pending_runtime'} | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $output 'release.json') -Encoding UTF8
 $repoRoot=[IO.Path]::GetFullPath($PSScriptRoot)+[IO.Path]::DirectorySeparatorChar
 if(!([IO.Path]::GetFullPath($output)).StartsWith($repoRoot,[StringComparison]::OrdinalIgnoreCase) -or !$destination.StartsWith($repoRoot,[StringComparison]::OrdinalIgnoreCase)){throw 'Output paths outside repository'}
 New-Item -ItemType Directory -Force -Path (Split-Path $destination) | Out-Null

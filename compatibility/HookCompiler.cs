@@ -25,6 +25,7 @@ public static class HookCompiler
         var assembly=typeof(HookCompiler).Assembly;
         var sources=assembly.GetManifestResourceNames().Where(n=>n.StartsWith("Hook.",StringComparison.Ordinal)).OrderBy(n=>n,StringComparer.Ordinal).Select(n=>CSharpSyntaxTree.ParseText(Encoding.UTF8.GetString(Resource(n)),path:n)).ToList();
         sources.Add(CSharpSyntaxTree.ParseText(GenerateSource(resolved),path:"TerritoryClient.g.cs"));
+        sources.Add(CSharpSyntaxTree.ParseText("namespace BD2.LocalIpc { public static class Build { public const string Fingerprint = " + JsonSerializer.Serialize(ToolFingerprint) + "; } }"));
         var refs=new List<MetadataReference>();
         // Read metadata only. Do not execute or copy game assemblies into the application directory.
         foreach(var file in Directory.EnumerateFiles(managed,"*.dll").OrderBy(x=>x,StringComparer.Ordinal))

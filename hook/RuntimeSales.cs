@@ -9,7 +9,7 @@ namespace BD2Territory.Runtime
 {
  internal sealed partial class RuntimeEngine
  {
-  private SalesProgress sales;private string salesPath="";private long lastSaleScan,lastSurplusProbe;
+  private SalesProgress sales;private string salesPath="";private long lastSaleScan,lastSurplusProbe;private int lastSurplusGather=-1;
   private bool SalesBusy()=>sales!=null&&sales.Pending;
   private ItemDBInfo[] SaleInventory()=>((IEnumerable<ItemDBInfo>)B.Read("Inventory.Items",null)??throw new InvalidOperationException("等待领地库存同步")).Select(x=>x.Clone()).ToArray();
   private long SaleCurrency()=>Convert.ToInt64(B.Invoke("Inventory.Currency",B.EnumObject("CurrencyKind","LocalMileage")));
@@ -27,8 +27,8 @@ namespace BD2Territory.Runtime
   }
   private SaleLine[] UrgentSurplus(TerritoryControl c,long now)
   {
-   if(!c.AutoSell||now-lastSurplusProbe<TimeSpan.FromSeconds(5).Ticks)return new SaleLine[0];
-   lastSurplusProbe=now;return PlanSurplus(c.SellThreshold);
+   if(!SurplusSales.ProbeDue(now,lastSurplusProbe,network.GatherReplies,lastSurplusGather))return new SaleLine[0];
+   lastSurplusProbe=now;lastSurplusGather=network.GatherReplies;return PlanSurplus(c.SellThreshold);
   }
   private SaleLine[] PlanSurplus(int threshold)
   {
@@ -45,10 +45,10 @@ namespace BD2Territory.Runtime
   {
    if(sales==null)return false;
    if(sales.Pending){StopMotion();s.Reason="等待领地售卖确认";if(now-sales.SubmittedTicks>TimeSpan.FromSeconds(30).Ticks)throw new InvalidOperationException("售卖结果未知，已保留记录；不会重复卖出，请核对库存和领地币");return true;}
-   if(!c.AutoSell||now-lastSaleScan<TimeSpan.FromSeconds(5).Ticks)return false;lastSaleScan=now;
+   if(prepared==null&&now-lastSaleScan<TimeSpan.FromSeconds(5).Ticks)return false;lastSaleScan=now;
    var lines=prepared??PlanSurplus(c.SellThreshold);if(lines.Length==0)return false;
    // No gathering/cooking/planting is active here. Recheck the lease before any irreversible request.
-   var live=control;if(live==null||!live.Valid(DateTime.UtcNow.Ticks,pid)||!live.AutoSell||live.OwnerId!=c.OwnerId||live.SellThreshold!=c.SellThreshold)return false;
+   var live=control;if(live==null||!live.Valid(DateTime.UtcNow.Ticks,pid)||live.OwnerId!=c.OwnerId||live.SellThreshold!=c.SellThreshold)return false;
    StopMotion();sales=new SalesProgress{Account=account,Token=Guid.NewGuid().ToString("N"),State="pending",Threshold=c.SellThreshold,SubmittedTicks=now,CurrencyBefore=SaleCurrency(),Lines=lines,ConfirmedItems=sales.ConfirmedItems,ConfirmedCurrency=sales.ConfirmedCurrency};
    SurplusSales.Validate(sales,account);LocalStorage.WriteJsonAtomically(salesPath,sales);network.ArmSales(sales);lastInput=now;
    var request=lines.Select(x=>new SellItemInfo{InvenIndex=x.Index,GroupId=x.Group,Id=x.Row,SellCount=x.Count}).ToList();

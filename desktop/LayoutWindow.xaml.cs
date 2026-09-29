@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
@@ -10,18 +10,22 @@ namespace BD2Territory.Desktop;
 public partial class LayoutWindow:Window
 {
  private readonly string root;private readonly TerritoryControlLink link;private readonly DispatcherTimer timer;
- private LayoutWorld? world;private LayoutDocument? document;private LayoutQuote? quote;private string token="",prepared="";private bool refreshing;
+ private LayoutWorld? world;private LayoutDocument? document;private LayoutQuote? quote;private string token="",prepared="";private bool refreshing,polling,starting,closing;private int viewRevision;
+ private Task controlQueue=Task.CompletedTask,shutdownTask=Task.CompletedTask;
+ private Task QueueControl(Action action){var prior=controlQueue;return controlQueue=Task.Run(async()=>{try{await prior.ConfigureAwait(false);}catch{}action();});}
+ internal Task WaitForCloseAsync()=>shutdownTask;
+ private async Task AttemptAsync(Func<Task> action){try{await action();if(!closing)MessageText.Foreground=(Brush)FindResource("TextBrush");}catch(OperationCanceledException){}catch(Exception ex){TerritoryDiagnostics.Write(root,"layout.failed",error:ex);if(!closing){Set(MessageText,ex.GetBaseException().Message);MessageText.Foreground=Brushes.Firebrick;}}}
  public LayoutWindow(string root,TerritoryControlLink link)
  {
-  this.root=root;this.link=link;InitializeComponent();InitializeLanguage();timer=new DispatcherTimer{Interval=TimeSpan.FromMilliseconds(500)};timer.Tick+=(_,_)=>{Refresh();};timer.Start();
-  Closed+=(_,_)=>{timer.Stop();try{link.Stop();}catch{}};Refresh();
+  this.root=root;this.link=link;InitializeComponent();InitializeLanguage();timer=new DispatcherTimer{Interval=TimeSpan.FromMilliseconds(500)};timer.Tick+=async(_,_)=>await RefreshAsync();timer.Start();
+  Closing+=OnClosing;_ = RefreshAsync();
  }
  private void Attempt(Action action){try{action();MessageText.Foreground=(Brush)FindResource("TextBrush");}catch(Exception e){Set(MessageText,e.GetBaseException().Message);MessageText.Foreground=Brushes.Firebrick;}}
  private bool Fresh()=>world!=null&&world.Runtime==TerritoryIdentity.RuntimeName&&world.ProcessId>0&&world.CapturedUtcTicks>=DateTime.UtcNow.AddSeconds(-5).Ticks&&world.CapturedUtcTicks<=DateTime.UtcNow.AddSeconds(2).Ticks;
  private void RequireWorld(){if(!Fresh())throw new InvalidOperationException("请先连接游戏并进入自己的领地，等待实时区域信息。");}
  private void SetDocument(LayoutDocument d)
  {
-  LayoutPlanner.Validate(d);document=d;token="";prepared="";quote=null;ApplyButton.IsEnabled=false;CostGrid.ItemsSource=null;Set(TitleText,d.Name+" · "+d.Objects.Length+" 处");
+  LayoutPlanner.Validate(d);viewRevision++;document=d;token="";prepared="";quote=null;ApplyButton.IsEnabled=false;CostGrid.ItemsSource=null;Set(TitleText,d.Name+" · "+d.Objects.Length+" 处");
   if(world!=null&&d.Objects.Length>0)ChunkBox.SelectedValue=d.Objects[0].ChunkId;
   PreviewCosts();Draw();Set(MessageText,"布局已载入；预检通过后才会开放购买。");
  }
@@ -31,20 +35,37 @@ public partial class LayoutWindow:Window
  private void SaveDocument(LayoutDocument d){var dialog=new SaveFileDialog{Title=ui.Language.Text("保存领地布局"),Filter=ui.Language.Text("领地布局 (*.json)|*.json"),FileName="territory-layout.json"};if(dialog.ShowDialog(this)==true){File.WriteAllText(dialog.FileName,JsonSerializer.Serialize(d,new JsonSerializerOptions{WriteIndented=true}));Set(MessageText,"布局已保存。");}}
  private void SaveClick(object sender,RoutedEventArgs e)=>Attempt(()=>{if(document==null)throw new InvalidOperationException("请先生成或载入布局。");SaveDocument(document);});
  private void ExportCurrentClick(object sender,RoutedEventArgs e)=>Attempt(()=>{RequireWorld();var d=new LayoutDocument{WorldId=world!.WorldId,Name="我的领地布局",Objects=world.Objects.Where(v=>world.Catalog.Any(i=>i.Id==v.ObjectId)).ToArray()};if(d.Objects.Length==0)throw new InvalidOperationException("当前没有可导出的建筑或装饰。");SaveDocument(d);});
- private void Begin(string operation)
+ private async Task BeginAsync(string operation)
  {
+  if(starting||closing)return;
   RequireWorld();if(document==null)throw new InvalidOperationException("请先生成或载入布局。");if(link.Enabled)throw new InvalidOperationException("已有操作执行中，请先暂停。");
   quote=LayoutPlanner.Quote(world!,document);if(operation=="apply"&&(prepared.Length==0||quote.Signature!=prepared||quote.Costs.Any(v=>v.Missing>0)))throw new InvalidOperationException("布局或费用已变化，请重新预检。");
-  token=Guid.NewGuid().ToString("N");TerritoryJson.Write(System.IO.Path.Combine(root,"layout-request.json"),new LayoutRequest{Token=token,Account=world!.Account,Operation=operation,Document=document,QuoteSignature=prepared});
-  link.Start(world.ProcessId,token);ApplyButton.IsEnabled=false;Set(MessageText,operation=="preview"?"正在检查游戏中的实际占地；本步骤不扣费。":"正在按已显示的费用清单购买并导入。");
-  if(operation=="apply")prepared="";Refresh();
+  starting=true;viewRevision++;var stopped=link.StopVersion;int pid=world!.ProcessId;token=Guid.NewGuid().ToString("N");var request=new LayoutRequest{Token=token,Account=world.Account,Operation=operation,Document=document,QuoteSignature=prepared};
+  ApplyButton.IsEnabled=false;PreviewButton.IsEnabled=false;LoadButton.IsEnabled=false;TemplateButton.IsEnabled=false;PauseButton.IsEnabled=true;ChunkBox.IsEnabled=false;TemplateBox.IsEnabled=false;
+  Set(MessageText,operation=="preview"?"正在检查游戏中的实际占地；本步骤不扣费。":"正在按已显示的费用清单购买并导入。");
+  if(operation=="apply")prepared="";
+  try{await QueueControl(()=>{if(closing||link.StopVersion!=stopped)throw new OperationCanceledException();TerritoryJson.Write(System.IO.Path.Combine(root,"layout-request.json"),request);link.Start(pid,request.Token,stopped);});}
+  finally{starting=false;if(!closing)await RefreshAsync();}
  }
- private void PreviewClick(object sender,RoutedEventArgs e)=>Attempt(()=>Begin("preview"));
- private void ApplyClick(object sender,RoutedEventArgs e)=>Attempt(()=>Begin("apply"));
- private void PauseClick(object sender,RoutedEventArgs e)=>Attempt(()=>{link.Stop();prepared="";Set(MessageText,"已暂停。已提交的摆放等待确认；再次预检后可接续。");Refresh();});
- private void Refresh()
+ private async void PreviewClick(object sender,RoutedEventArgs e)=>await AttemptAsync(()=>BeginAsync("preview"));
+ private async void ApplyClick(object sender,RoutedEventArgs e)=>await AttemptAsync(()=>BeginAsync("apply"));
+ private async void PauseClick(object sender,RoutedEventArgs e)=>await AttemptAsync(PauseAsync);
+ private async Task PauseAsync(){link.RequestStop();viewRevision++;prepared="";PauseButton.IsEnabled=false;Set(MessageText,"已暂停。已提交的摆放等待确认；再次预检后可接续。");await QueueControl(link.Stop);await RefreshAsync();}
+ private async Task RefreshAsync()
  {
-  var next=TerritoryJson.Read<LayoutWorld>(System.IO.Path.Combine(root,"layout-world.json"));
+  if(polling||closing||starting)return;polling=true;var revision=viewRevision;
+  try{var state=await Task.Run(()=>(World:TerritoryJson.Read<LayoutWorld>(System.IO.Path.Combine(root,"layout-world.json")),Status:TerritoryJson.Read<LayoutStatus>(System.IO.Path.Combine(root,"layout-status.json"))));
+   if(!closing&&!starting&&revision==viewRevision)Render(state.World,state.Status);}
+  catch(Exception ex){TerritoryDiagnostics.Throttled(root,"layout.refresh.failed",ex);}
+  finally{polling=false;}
+ }
+ private void OnClosing(object? sender,System.ComponentModel.CancelEventArgs e)
+ {
+  if(closing)return;e.Cancel=true;closing=true;viewRevision++;timer.Stop();link.RequestStop();shutdownTask=CloseAsync();
+ }
+ private async Task CloseAsync(){try{var release=QueueControl(link.Stop);if(await Task.WhenAny(release,Task.Delay(2000))==release)await release;}catch(Exception ex){TerritoryDiagnostics.Write(root,"layout.close.failed",error:ex);}Close();}
+ private void Render(LayoutWorld? next,LayoutStatus? s)
+ {
   if(next!=null)
   {
    bool changed=world?.Account!=next.Account||world?.WorldId!=next.WorldId;world=next;
@@ -53,15 +74,14 @@ public partial class LayoutWindow:Window
    Set(AccountText,$"当前账号 ID：{world.Account}\n领地类型：{world.WorldId} · 已解锁 {world.Chunks.Length} 个区域");
    if(changed)prepared="";
   }
-  var s=TerritoryJson.Read<LayoutStatus>(System.IO.Path.Combine(root,"layout-status.json"));
   if(s!=null&&s.Token==token&&token.Length>0)
   {
    Set(MessageText,s.Message);MessageText.Foreground=s.State=="error"?Brushes.Firebrick:(Brush)FindResource("TextBrush");Progress.Maximum=Math.Max(1,s.Total);Progress.Value=s.Done;
    if(s.Quote!=null){quote=s.Quote;CostGrid.ItemsSource=quote.Costs;Set(TotalText,"合计："+(quote.Costs.Length==0?"无需购买":string.Join("、",quote.Costs.Select(v=>v.Name+" "+v.Count)))+(quote.Costs.Any(v=>v.Missing>0)?"（有缺口）":""));Set(SummaryText,$"复用 {quote.Existing} 处；移动 {quote.Moved} 处；新建 {quote.Purchased} 处\n已检查／完成 {s.Done} / {s.Total}");}
    if(s.State is "ready" or "complete" or "error" or "paused")
-   {if(link.Enabled)link.Stop();prepared=s.State=="ready"?s.Quote?.Signature??"":"";}
+   {if(link.Enabled){link.RequestStop();_ = AttemptAsync(()=>QueueControl(link.Stop));}prepared=s.State=="ready"?s.Quote?.Signature??"":"";}
   }
-  bool idle=!link.Enabled;PreviewButton.IsEnabled=idle&&Fresh()&&document!=null;ApplyButton.IsEnabled=idle&&Fresh()&&prepared.Length>0&&quote!=null&&!quote.Costs.Any(v=>v.Missing>0);
+  bool idle=!link.Enabled&&!starting&&!closing;PreviewButton.IsEnabled=idle&&Fresh()&&document!=null;ApplyButton.IsEnabled=idle&&Fresh()&&prepared.Length>0&&quote!=null&&!quote.Costs.Any(v=>v.Missing>0);
   PauseButton.IsEnabled=!idle;TemplateButton.IsEnabled=idle&&Fresh();LoadButton.IsEnabled=idle;ChunkBox.IsEnabled=idle;TemplateBox.IsEnabled=idle;ExportCurrentButton.IsEnabled=Fresh()&&idle;
  }
  private void ChunkChanged(object sender,SelectionChangedEventArgs e){if(!refreshing)Draw();}
@@ -77,16 +97,16 @@ public partial class LayoutWindow:Window
    Canvas.SetLeft(cell,x*32);Canvas.SetTop(cell,(9-y)*32);Board.Children.Add(cell);
   }
  }
- internal void SmokeFlow(Action<bool,string> check)
+ internal async Task SmokeFlowAsync(Action<bool,string> check)
  {
-  Begin("preview");var request=TerritoryJson.Read<LayoutRequest>(System.IO.Path.Combine(root,"layout-request.json"));
+  await BeginAsync("preview");var request=TerritoryJson.Read<LayoutRequest>(System.IO.Path.Combine(root,"layout-request.json"));
   check(link.Enabled&&request?.Account==world!.Account&&request.Operation=="preview","预检指令绑定当前账号和租约");
   var result=new LayoutStatus{Token=token,State="ready",Quote=LayoutPlanner.Quote(world!,document!),Done=document!.Objects.Length,Total=document.Objects.Length,Message="预检通过"};
-  TerritoryJson.Write(System.IO.Path.Combine(root,"layout-status.json"),result);Refresh();check(!link.Enabled&&ApplyButton.IsEnabled,"预检完成停止控制且开放执行");
-  SetDocument(document!);Refresh();check(!ApplyButton.IsEnabled,"换布局后旧预检回执不能重新开放购买");
-  Begin("preview");result.Token=token;TerritoryJson.Write(System.IO.Path.Combine(root,"layout-status.json"),result);Refresh();Begin("apply");
+  TestTransport.Publish(System.IO.Path.Combine(root,"layout-status.json"),result);await RefreshAsync();check(!link.Enabled&&ApplyButton.IsEnabled,"预检完成停止控制且开放执行");
+  SetDocument(document!);await RefreshAsync();check(!ApplyButton.IsEnabled,"换布局后旧预检回执不能重新开放购买");
+  await BeginAsync("preview");result.Token=token;TestTransport.Publish(System.IO.Path.Combine(root,"layout-status.json"),result);await RefreshAsync();await BeginAsync("apply");
   request=TerritoryJson.Read<LayoutRequest>(System.IO.Path.Combine(root,"layout-request.json"));check(request?.Operation=="apply"&&request.QuoteSignature==result.Quote.Signature&&link.Enabled,"执行指令携带已预检费用身份");
-  result.Token=token;result.State="complete";TerritoryJson.Write(System.IO.Path.Combine(root,"layout-status.json"),result);Refresh();check(!link.Enabled&&!ApplyButton.IsEnabled,"导入完成不再次执行付款");
+  result.Token=token;result.State="complete";TestTransport.Publish(System.IO.Path.Combine(root,"layout-status.json"),result);await RefreshAsync();check(!link.Enabled&&!ApplyButton.IsEnabled,"导入完成不再次执行付款");
  }
- internal void SmokeSetup(LayoutWorld sample,LayoutDocument d){world=sample;ChunkBox.ItemsSource=world.Chunks;ChunkBox.SelectedValue=world.Chunks[0].Id;SetDocument(d);}
+ internal void SmokeSetup(LayoutWorld sample,LayoutDocument d){timer.Stop();world=sample;ChunkBox.ItemsSource=world.Chunks;ChunkBox.SelectedValue=world.Chunks[0].Id;SetDocument(d);}
 }

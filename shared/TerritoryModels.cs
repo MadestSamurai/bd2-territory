@@ -3,6 +3,7 @@ namespace BD2Territory
 {
  public static class TerritoryIdentity
  {
+  public const string LiveEntries="runtime.json|control.json|latest.json|layout-request.json|layout-status.json|layout-world.json";
   public const string RuntimeName="BD2Territory.Runtime25";
   public static string DataRoot=>System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"BD2Territory");
   public static bool IsGameProcessName(string name)=>string.Equals(name,"BrownDust II",StringComparison.OrdinalIgnoreCase)||string.Equals(name,"BrownDust II.exe",StringComparison.OrdinalIgnoreCase);
@@ -14,7 +15,8 @@ namespace BD2Territory
   public bool UseNavMesh{get;set;}=false;
   public bool DashRecovery{get;set;}=true;public bool UseVehicle{get;set;}=true;
   public bool FixedCrop{get;set;}=false;public int FixedSeedId{get;set;}=0;
-  public bool AutoSell{get;set;}=false;public int SellThreshold{get;set;}=9900;
+  // Capacity protection is mandatory; ignore the obsolete saved opt-out.
+  public bool AutoSell{get{return true;}set{}}public int SellThreshold{get;set;}=9900;
   public int RecipeId{get;set;}=3;public bool Cooking{get;set;}=false;public int CookingBatch{get;set;}=100;
   public int IntervalMs{get;set;}=500;public long PlantingBudget{get;set;}=1400;
   public bool ValidSettings()=>SurplusSales.ValidThreshold(SellThreshold)&&FixedSeedId>=0&&CookingBatch>=1&&CookingBatch<=1000&&RecipeId>0&&IntervalMs>=100&&IntervalMs<=60000&&PlantingBudget>=0&&PlantingBudget<=10000000;
