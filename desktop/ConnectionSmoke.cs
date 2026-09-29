@@ -61,8 +61,10 @@ public partial class TerritoryWindow
    var startControl=Task.Run(()=>link.Start(123));await accepted.Task.WaitAsync(TimeSpan.FromSeconds(3));
    var stopWatch=Stopwatch.StartNew();var stopped=StopAsync();
    Check(!link.Enabled&&stopWatch.ElapsedMilliseconds<150,"stop immediately revokes local state while write is blocked");
+   var pausedVersion=link.StopVersion;
    int before=beats;await Task.Delay(200);Check(beats>before+3,"dispatcher remains responsive while stop awaits acknowledgement");
    release.SetResult();await Task.WhenAll(startControl,stopped).WaitAsync(TimeSpan.FromSeconds(4));
+   Check(link.StopVersion==pausedVersion,"sending a requested stop does not cancel subsequent starts again");
    Check(commands.Count>=2&&commands[0].Enabled&&commands.Skip(1).All(c=>!c.Enabled&&c.UntilUtcTicks==0),"in-flight start cannot leave a renewed lease after stop");
    bool staleStart=false;try{await Task.Run(()=>link.Start(123,expectedStopVersion:stopVersion));}catch(OperationCanceledException){staleStart=true;}Check(staleStart&&!link.Enabled,"queued start cannot outlive a newer stop");
    cancelPeer.Cancel();await peer;

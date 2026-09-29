@@ -1,13 +1,12 @@
-# BD2 Territory v0.4.0（未发布候选 / Unpublished candidate）
-
-此候选未公开发布，请使用 0.4.1 正式版。This candidate was not published; use the 0.4.1 stable release.
+# BD2 Territory v0.4.1
 
 ## 简体中文
 
 ### 更新内容
 
-- 首个正式版，软件窗口、程序版本与下载包统一为 0.4.0。
+- 首个正式版，软件窗口、程序版本与下载包统一为 0.4.1。
 - 修复连接时界面未响应：状态、诊断和布局读取在后台执行，暂停立即生效，关闭窗口不再无限等待。
+- 修复布局预检结束后立即重新预检或导入时，旧停止通知误取消新操作的问题。
 - 支持兼容组件在同一游戏进程内更新和交接，补齐连接各阶段的诊断日志。
 - 容量保护始终开启，只出售超出保留阈值的部分。阈值为 100–9900，默认 9900；保留物品分类和锁定检查。
 - 收完本批农作物后集中补种，再采矿与砍树；按实际农田分组批量播种，不要求 100 格或全部连片。
@@ -32,8 +31,9 @@
 
 ### Changes
 
-- First stable release. Application windows, version metadata and downloads use 0.4.0.
+- First stable release. Application windows, version metadata and downloads use 0.4.1.
 - Fixes connection freezes: state, diagnostic and layout reads run in the background. Pause takes effect immediately; closing no longer waits indefinitely.
+- Fixes a delayed completion notification cancelling a new layout preview or import.
 - Supports compatible component updates and handoff within the same game process, with diagnostics for each connection stage.
 - Capacity protection stays enabled and sells only stock above the retained quantity. Set the threshold from 100 to 9900, default 9900; item eligibility and lock checks remain in place.
 - Harvests the current crop batch and replants before mining and logging. Batch planting uses actual field groups without requiring 100 connected fields.

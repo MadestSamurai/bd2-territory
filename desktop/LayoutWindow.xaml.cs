@@ -50,7 +50,7 @@ public partial class LayoutWindow:Window
  private async void PreviewClick(object sender,RoutedEventArgs e)=>await AttemptAsync(()=>BeginAsync("preview"));
  private async void ApplyClick(object sender,RoutedEventArgs e)=>await AttemptAsync(()=>BeginAsync("apply"));
  private async void PauseClick(object sender,RoutedEventArgs e)=>await AttemptAsync(PauseAsync);
- private async Task PauseAsync(){link.RequestStop();viewRevision++;prepared="";PauseButton.IsEnabled=false;Set(MessageText,"已暂停。已提交的摆放等待确认；再次预检后可接续。");await QueueControl(link.Stop);await RefreshAsync();}
+ private async Task PauseAsync(){link.RequestStop();viewRevision++;prepared="";PauseButton.IsEnabled=false;Set(MessageText,"已暂停。已提交的摆放等待确认；再次预检后可接续。");await QueueControl(link.Flush);await RefreshAsync();}
  private async Task RefreshAsync()
  {
   if(polling||closing||starting)return;polling=true;var revision=viewRevision;
@@ -63,7 +63,7 @@ public partial class LayoutWindow:Window
  {
   if(closing)return;e.Cancel=true;closing=true;viewRevision++;timer.Stop();link.RequestStop();shutdownTask=CloseAsync();
  }
- private async Task CloseAsync(){try{var release=QueueControl(link.Stop);if(await Task.WhenAny(release,Task.Delay(2000))==release)await release;}catch(Exception ex){TerritoryDiagnostics.Write(root,"layout.close.failed",error:ex);}Close();}
+ private async Task CloseAsync(){try{var release=QueueControl(link.Flush);if(await Task.WhenAny(release,Task.Delay(2000))==release)await release;}catch(Exception ex){TerritoryDiagnostics.Write(root,"layout.close.failed",error:ex);}Close();}
  private void Render(LayoutWorld? next,LayoutStatus? s)
  {
   if(next!=null)
@@ -79,7 +79,7 @@ public partial class LayoutWindow:Window
    Set(MessageText,s.Message);MessageText.Foreground=s.State=="error"?Brushes.Firebrick:(Brush)FindResource("TextBrush");Progress.Maximum=Math.Max(1,s.Total);Progress.Value=s.Done;
    if(s.Quote!=null){quote=s.Quote;CostGrid.ItemsSource=quote.Costs;Set(TotalText,"合计："+(quote.Costs.Length==0?"无需购买":string.Join("、",quote.Costs.Select(v=>v.Name+" "+v.Count)))+(quote.Costs.Any(v=>v.Missing>0)?"（有缺口）":""));Set(SummaryText,$"复用 {quote.Existing} 处；移动 {quote.Moved} 处；新建 {quote.Purchased} 处\n已检查／完成 {s.Done} / {s.Total}");}
    if(s.State is "ready" or "complete" or "error" or "paused")
-   {if(link.Enabled){link.RequestStop();_ = AttemptAsync(()=>QueueControl(link.Stop));}prepared=s.State=="ready"?s.Quote?.Signature??"":"";}
+   {if(link.Enabled){link.RequestStop();_ = AttemptAsync(()=>QueueControl(link.Flush));}prepared=s.State=="ready"?s.Quote?.Signature??"":"";}
   }
   bool idle=!link.Enabled&&!starting&&!closing;PreviewButton.IsEnabled=idle&&Fresh()&&document!=null;ApplyButton.IsEnabled=idle&&Fresh()&&prepared.Length>0&&quote!=null&&!quote.Costs.Any(v=>v.Missing>0);
   PauseButton.IsEnabled=!idle;TemplateButton.IsEnabled=idle&&Fresh();LoadButton.IsEnabled=idle;ChunkBox.IsEnabled=idle;TemplateBox.IsEnabled=idle;ExportCurrentButton.IsEnabled=Fresh()&&idle;
@@ -102,9 +102,20 @@ public partial class LayoutWindow:Window
   await BeginAsync("preview");var request=TerritoryJson.Read<LayoutRequest>(System.IO.Path.Combine(root,"layout-request.json"));
   check(link.Enabled&&request?.Account==world!.Account&&request.Operation=="preview","预检指令绑定当前账号和租约");
   var result=new LayoutStatus{Token=token,State="ready",Quote=LayoutPlanner.Quote(world!,document!),Done=document!.Objects.Length,Total=document.Objects.Length,Message="预检通过"};
-  TestTransport.Publish(System.IO.Path.Combine(root,"layout-status.json"),result);await RefreshAsync();check(!link.Enabled&&ApplyButton.IsEnabled,"预检完成停止控制且开放执行");
-  SetDocument(document!);await RefreshAsync();check(!ApplyButton.IsEnabled,"换布局后旧预检回执不能重新开放购买");
-  await BeginAsync("preview");result.Token=token;TestTransport.Publish(System.IO.Path.Combine(root,"layout-status.json"),result);await RefreshAsync();await BeginAsync("apply");
+  // Hold the control queue so a new preview is requested before the previous stop is sent.
+  var release=new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+  var entered=new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+  var held=QueueControl(()=>{entered.SetResult();release.Task.GetAwaiter().GetResult();});
+  try
+  {
+   await entered.Task.WaitAsync(TimeSpan.FromSeconds(3));
+   TestTransport.Publish(System.IO.Path.Combine(root,"layout-status.json"),result);await RefreshAsync();check(!link.Enabled&&ApplyButton.IsEnabled,"预检完成停止控制且开放执行");
+   SetDocument(document!);await RefreshAsync();check(!ApplyButton.IsEnabled,"换布局后旧预检回执不能重新开放购买");
+   var next=BeginAsync("preview");check(!next.IsCompleted,"新预检等待旧控制通知，不阻塞界面");release.SetResult();await next;
+   check(link.Enabled,"迟到的完成通知不取消后续预检");
+  }
+  finally{release.TrySetResult();await held;}
+  result.Token=token;TestTransport.Publish(System.IO.Path.Combine(root,"layout-status.json"),result);await RefreshAsync();await BeginAsync("apply");
   request=TerritoryJson.Read<LayoutRequest>(System.IO.Path.Combine(root,"layout-request.json"));check(request?.Operation=="apply"&&request.QuoteSignature==result.Quote.Signature&&link.Enabled,"执行指令携带已预检费用身份");
   result.Token=token;result.State="complete";TestTransport.Publish(System.IO.Path.Combine(root,"layout-status.json"),result);await RefreshAsync();check(!link.Enabled&&!ApplyButton.IsEnabled,"导入完成不再次执行付款");
  }

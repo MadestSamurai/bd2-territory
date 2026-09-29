@@ -20,7 +20,7 @@ If a network interruption leaves the outcome unknown, the tool pauses and preser
 
 ## Download
 
-Current stable version: **0.4.0**. One application includes Simplified Chinese and English, switchable from the top-right corner.
+Current stable version: **0.4.1**. One application includes Simplified Chinese and English, switchable from the top-right corner.
 
 Connection freeze fix: state and diagnostic reads run in the background, polling pauses while connecting, and pause/close no longer wait on the pipe lock. `connection.log` is available from the start of each attempt.
 

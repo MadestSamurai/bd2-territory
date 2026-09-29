@@ -72,7 +72,7 @@ public partial class TerritoryWindow : Window
   if(connecting||closing||layoutOpen)return;connecting=true;connectionEpoch++;ConnectButton.IsEnabled=false;StartButton.IsEnabled=false;ShowError("");Set(StatusText,"正在连接领地组件");
   TerritoryDiagnostics.Write(root,"ui.connect.clicked");var wasEnabled=link.Enabled;link.RequestStop();
   try {
-   await refreshWork;if(wasEnabled)await QueueControl(link.Stop);
+   await refreshWork;if(wasEnabled)await QueueControl(link.Flush);
    Action<string> progress=text=>Dispatcher.InvokeAsync(()=>{if(!closing&&connecting)Set(ReasonText,text);});
    var message=testConnector==null?await Task.Run(()=>new TerritoryConnection(root).Connect(progress,lifetime.Token)):await testConnector(progress,lifetime.Token);
    if(!closing)Set(ReasonText,message);
@@ -108,7 +108,7 @@ public partial class TerritoryWindow : Window
  {
   link.RequestStop();if(clearError)ShowError("");Set(StatusText,"自动化已暂停");Set(ReasonText,"批次进度会保留；已提交的播种等待服务器确认。");
   StartButton.IsEnabled=!closing&&!connecting&&TerritoryControlLink.Fresh(snapshot,DateTime.UtcNow)&&snapshot!.Ready;StopButton.IsEnabled=false;ConnectButton.IsEnabled=!connecting&&!closing;
-  try{await QueueControl(link.Stop);}catch(Exception ex){TerritoryDiagnostics.Write(root,"stop.failed",error:ex);if(!closing)ShowError(ex.GetBaseException().Message+"；若停止文件未写入，控制租约会在 10 秒内失效。");}
+  try{await QueueControl(link.Flush);}catch(Exception ex){TerritoryDiagnostics.Write(root,"stop.failed",error:ex);if(!closing)ShowError(ex.GetBaseException().Message+"；若停止文件未写入，控制租约会在 10 秒内失效。");}
  }
  private async Task RefreshAsync()
  {

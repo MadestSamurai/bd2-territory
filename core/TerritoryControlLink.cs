@@ -36,6 +36,8 @@ public sealed class TerritoryControlLink:IDisposable
  // Local state can always be revoked without waiting for a pipe or a heartbeat.
  public void RequestStop(){lock(sync){command.Enabled=false;stopVersion++;revision++;}}
  public void Stop(){RequestStop();Publish();}
+ // Flush an already requested transition without creating a second stop generation.
+ public void Flush()=>Publish();
  private void Publish(){lock(sendSync)PublishLocked();}
  private void PublishLocked()
  {
