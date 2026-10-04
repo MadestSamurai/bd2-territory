@@ -16,11 +16,11 @@ Under **Surplus stock sales**, choose the quantity to keep per item (100–9900,
 
 Only territory materials, produce and meals explicitly listed by the game's territory shop are eligible. Locked items, buildings, decorations, equipment and attribute stones are excluded. Each batch waits for confirmation; the UI shows confirmed sales and territory currency earned. Harvest the current crop batch and replant before mining or logging. Full inventory or a gathering result with no new rewards does not stop gathering.
 
-If a network interruption leaves the outcome unknown, the tool pauses and preserves the record without resubmitting. Check the game inventory and logs. Thresholds, categories, locks, duplicate replies and current-client interface compilation have been checked; live selling has not been exercised for this release.
+If a sale confirmation is missing, the tool waits for game requests to finish, refreshes territory stock and currency from the server, and resumes planning from current stock. The old record is preserved and never replayed. Manually clearing inventory no longer requires deleting records. Unconfirmed sales are not added to confirmed totals.
 
 ## Download
 
-Current stable version: **0.4.1**. One application includes Simplified Chinese and English, switchable from the top-right corner.
+Current stable version: **0.4.2**. One application includes Simplified Chinese and English, switchable from the top-right corner.
 
 Connection freeze fix: state and diagnostic reads run in the background, polling pauses while connecting, and pause/close no longer wait on the pipe lock. `connection.log` is available from the start of each attempt.
 

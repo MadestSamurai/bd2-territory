@@ -19,9 +19,17 @@ namespace BD2Territory
   public int Schema{get;set;}=1;public string Account{get;set;}="";public string Token{get;set;}="";public string State{get;set;}="idle";
   public int Threshold{get;set;}=9900;public long SubmittedTicks{get;set;}public long CurrencyBefore{get;set;}
   public long ConfirmedItems{get;set;}public long ConfirmedCurrency{get;set;}public SaleLine[] Lines{get;set;}=new SaleLine[0];
+  public bool BalancesMatched{get;set;}public long ObservedCurrency{get;set;}public SaleStock[] ObservedItems{get;set;}=new SaleStock[0];
+  public SalesSnapshot Recovery{get;set;}
   public bool Pending=>State=="pending";
  }
  public sealed class SalesReply {public string Token="";public bool Accepted,Rejected,Matches;public long Reward;public string Error="";}
+ public sealed class SalesSnapshot
+ {
+  public string Token{get;set;}="";public string Account{get;set;}="";public string Error{get;set;}="";
+  public long RequestedTicks{get;set;}public long CapturedTicks{get;set;}public long Currency{get;set;}=-1;
+  public bool Accepted{get;set;}public SaleStock[] Items{get;set;}=new SaleStock[0];
+ }
  public static class SurplusSales
  {
   public const int Minimum=100,Maximum=9900;
@@ -51,16 +59,30 @@ namespace BD2Territory
   public static bool Matches(SaleLine[] expected,SaleLine[] actual)=>expected!=null&&actual!=null&&expected.Length>0&&expected.Length==actual.Length&&expected.All(e=>actual.Count(a=>a.Index==e.Index&&a.Group==e.Group&&a.Row==e.Row&&a.Count==e.Count)==1);
   public static void Validate(SalesProgress p,string account)
   {
-   if(p.Schema!=1||p.Account!=account||p.ConfirmedItems<0||p.ConfirmedCurrency<0||!new[]{"idle","pending","confirmed","rejected"}.Contains(p.State))throw new InvalidOperationException("Territory sale journal identity mismatch");
+   if(p.Schema!=1||p.Account!=account||p.ConfirmedItems<0||p.ConfirmedCurrency<0||!new[]{"idle","pending","confirmed","rejected","reconciled"}.Contains(p.State))throw new InvalidOperationException("Territory sale journal identity mismatch");
    if(p.Pending&&(!ValidThreshold(p.Threshold)||p.SubmittedTicks<=0||p.CurrencyBefore<0||string.IsNullOrEmpty(p.Token)||p.Lines==null||p.Lines.Length<1||p.Lines.Length>32||p.Lines.Any(x=>x.Index<=0||x.Item<=0||x.Group!=1||x.Row<=0||x.Count<=0||x.Count>x.Before||x.Price<=0)||p.Lines.Select(x=>x.Index).Distinct().Count()!=p.Lines.Length))throw new InvalidOperationException("Invalid pending territory sale; refusing to repeat");
   }
-  public static void Confirm(SalesProgress p,SalesReply r,IDictionary<long,int> inventory,long currency)
+  public static bool Reconcile(SalesProgress p,SalesSnapshot snapshot,string account,bool nativeIdle)
+  {
+   Validate(p,account);
+   if(!p.Pending||!nativeIdle||snapshot==null||!snapshot.Accepted||snapshot.Token!=p.Token||snapshot.Account!=account||snapshot.RequestedTicks<=p.SubmittedTicks||snapshot.CapturedTicks<snapshot.RequestedTicks||snapshot.Currency<0)return false;
+   var items=snapshot.Items;
+   if(items==null||items.Any(x=>x==null||x.Index<=0||x.Item<=0||x.Count<0)||items.Select(x=>x.Index).Distinct().Count()!=items.Length)return false;
+   // A fresh authoritative snapshot is a new planning baseline, not proof of the old sale.
+   // Never infer a receipt from balances, never add unknown sales to confirmed counters.
+   p.Recovery=snapshot;p.State="reconciled";return true;
+  }
+  public static bool Confirm(SalesProgress p,SalesReply r,IDictionary<long,int> inventory,long currency)
   {
    if(!p.Pending||r.Token!=p.Token||!r.Matches)throw new InvalidOperationException("Territory sale receipt does not match; no repeat sale will be sent");
-   if(r.Rejected&&!r.Accepted){p.State="rejected";return;}
+   if(r.Rejected&&!r.Accepted){p.State="rejected";return true;}
    long expected=p.Lines.Sum(x=>(long)x.Count*x.Price);
-   if(!r.Accepted||r.Rejected||r.Reward!=expected||currency!=checked(p.CurrencyBefore+expected)||p.Lines.Any(x=>(inventory.TryGetValue(x.Index,out var n)?n:0)!=x.Before-x.Count))throw new InvalidOperationException("Territory sale result is unknown; inventory and currency must be checked before continuing");
-   p.ConfirmedItems=checked(p.ConfirmedItems+p.Lines.Sum(x=>(long)x.Count));p.ConfirmedCurrency=checked(p.ConfirmedCurrency+expected);p.State="confirmed";
+   if(!r.Accepted||r.Rejected||r.Reward!=expected)return false;
+   // The matched successful native receipt is authoritative. Later stock/currency changes
+   // are diagnostic evidence, not a reason to leave a completed sale pending forever.
+   p.ObservedCurrency=currency;p.ObservedItems=p.Lines.Select(x=>new SaleStock{Index=x.Index,Item=x.Item,Count=inventory.TryGetValue(x.Index,out var count)?count:0}).ToArray();
+   p.BalancesMatched=currency==checked(p.CurrencyBefore+expected)&&p.Lines.All(x=>(inventory.TryGetValue(x.Index,out var n)?n:0)==x.Before-x.Count);
+   p.ConfirmedItems=checked(p.ConfirmedItems+p.Lines.Sum(x=>(long)x.Count));p.ConfirmedCurrency=checked(p.ConfirmedCurrency+expected);p.State="confirmed";return true;
   }
  }
 }

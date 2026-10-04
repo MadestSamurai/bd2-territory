@@ -1,0 +1,1 @@
+Console.WriteLine("Production sale adapter: "+BD2Territory.Runtime.RuntimeEngine.RunTests()+" checks passed");

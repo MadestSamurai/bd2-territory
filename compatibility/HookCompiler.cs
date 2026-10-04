@@ -31,7 +31,7 @@ public static class HookCompiler
         foreach(var file in Directory.EnumerateFiles(managed,"*.dll").OrderBy(x=>x,StringComparer.Ordinal))
         {try{refs.Add(MetadataReference.CreateFromFile(file));}catch(BadImageFormatException){}}
         refs.Add(MetadataReference.CreateFromImage(Resource("BD2Territory.Harmony.dll")));
-        var compilation=CSharpCompilation.Create("BD2Territory.Runtime25."+ToolFingerprint.Substring(0,16),sources,refs,new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,optimizationLevel:OptimizationLevel.Release,platform:Platform.X64,deterministic:true));
+        var compilation=CSharpCompilation.Create("BD2Territory.Runtime26."+ToolFingerprint.Substring(0,16),sources,refs,new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,optimizationLevel:OptimizationLevel.Release,platform:Platform.X64,deterministic:true));
         using var stream=new MemoryStream();
         var emit=compilation.Emit(stream,manifestResources:new[]{new ResourceDescription("BD2Territory.Harmony.dll",()=>new MemoryStream(Resource("BD2Territory.Harmony.dll")),true)});
         if(!emit.Success)throw new InvalidOperationException("当前客户端接口无法编译，尚未注入。\n"+string.Join("\n",emit.Diagnostics.Where(d=>d.Severity==DiagnosticSeverity.Error).Take(30)));
@@ -103,7 +103,7 @@ public static class HookCompiler
     }
     public static void ValidateObservers(MetadataIndex index,ResolvedBindings r)
     {
-        foreach(var response in new[]{"LifeWorldObjectGatheringResponse","LifeSeedingResponse","LifeWorldObjectPlaceSaveResponse","LifeWorldObjectPositionSaveResponse","LifeCookingResponse","LifeShopSellResponse"})
+        foreach(var response in new[]{"LifeWorldObjectGatheringResponse","LifeSeedingResponse","LifeWorldObjectPlaceSaveResponse","LifeWorldObjectPositionSaveResponse","LifeCookingResponse","LifeShopSellResponse","LifeInfoResponse"})
         {
             var count=index.Types.SelectMany(t=>t.Methods).Count(m=>m.HasBody && m.ReturnType.FullName=="System.Boolean" && m.Parameters.Select(p=>p.ParameterType.FullName).SequenceEqual(new[]{"System.Byte[]","System.Int32","System.Int32"}) && m.Body.Instructions.Any(i=>i.Operand is MethodReference call && call.DeclaringType.FullName=="Proto.Net."+response && call.Name=="get_Parser"));
             if(count<1)throw new InvalidOperationException("缺少原生回执入口："+response);

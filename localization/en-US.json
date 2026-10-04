@@ -321,5 +321,8 @@
   "收完本批作物后集中补种": "Finish this crop harvest, then replant the batch",
   "正在连接领地组件…": "Connecting territory component…",
   "连接仍在进行，已等待 ": "Connection is still in progress; waited ",
-  " 秒；可打开诊断目录查看 connection.log。": " seconds. Open the diagnostics folder to inspect connection.log."
+  " 秒；可打开诊断目录查看 connection.log。": " seconds. Open the diagnostics folder to inspect connection.log.",
+  "等待游戏网络请求结束后核对售卖": "Waiting for game requests to finish before reconciling the sale",
+  "正在从服务器重新核对领地库存；不会重复旧售卖": "Refreshing territory stock from the server; the old sale will not be replayed",
+  "已同步库存，继续自动化；旧售卖未重复执行": "Stock synchronized. Resuming automation without replaying the old sale"
 }

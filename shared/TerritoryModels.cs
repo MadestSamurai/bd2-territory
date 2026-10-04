@@ -4,7 +4,7 @@ namespace BD2Territory
  public static class TerritoryIdentity
  {
   public const string LiveEntries="runtime.json|control.json|latest.json|layout-request.json|layout-status.json|layout-world.json";
-  public const string RuntimeName="BD2Territory.Runtime25";
+  public const string RuntimeName="BD2Territory.Runtime26";
   public static string DataRoot=>System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"BD2Territory");
   public static bool IsGameProcessName(string name)=>string.Equals(name,"BrownDust II",StringComparison.OrdinalIgnoreCase)||string.Equals(name,"BrownDust II.exe",StringComparison.OrdinalIgnoreCase);
  }

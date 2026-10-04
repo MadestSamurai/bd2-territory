@@ -103,6 +103,9 @@ namespace BD2Territory.Runtime
     if(level!=null){ConfirmTerritoryPopup(level,s,now);Publish(s);return;}
     if(popupProgress.WaitForSettle(now)){StopMove();s.Reason="等待领地升级／解锁界面切换完成";Publish(s);return;}
     if(vehicleRequest.TimedOut(now))throw new InvalidOperationException("载具加载超过 8 秒，已暂停；等待游戏完成加载后可重新开始。");
+    // Sale reconciliation must run before generic request waiting, otherwise a missing
+    // sale callback prevents the recovery path itself from ever being reached.
+    if(SalesBusy()&&!network.NonSalesWaiting&&!(bool)B.Read("Tool.Busy",tool)&&!ToolLoading()){SalesTick(s,c,now);Publish(s);return;}
     if(AwaitGathering(s,now,pending)){Publish(s);return;}
     RefreshLocalCacheContext();
     if(farmStage>0){AdvancePlant(s,now);Publish(s);return;}
@@ -563,11 +566,12 @@ namespace BD2Territory.Runtime
   internal void PrepareHandoff(){handoffRequested=true;control=new TerritoryControl();StopMove();}
   internal string HandoffBusy(){
    if(ioBusy!=0)return "snapshot writer";
-   if(network.Waiting||Convert.ToInt32(B.Read("Network.QueuedHarvest",null))>0)return "harvest response";
+   if(network.NativeBusy||network.NonSalesWaiting||Convert.ToInt32(B.Read("Network.QueuedHarvest",null))>0)return "harvest response";
    if(tool!=null&&((bool)B.Read("Tool.Busy",tool)||ToolLoading()))return "native tool action";
    if(progress!=null&&!string.IsNullOrEmpty(progress.PendingToken))return "planting receipt";
    if(vehiclePending)return "vehicle transition";
-   if(SalesBusy())return "sale receipt";if(CookingBusy())return "cooking receipt";if(LayoutBusy())return "layout receipt";
+   // Unknown sales are durable and recoverable by the replacement component once native requests end.
+   if(CookingBusy())return "cooking receipt";if(LayoutBusy())return "layout receipt";
    return "";
   }
   internal void Stop(){Release();stopped=true;timer?.Dispose();timer=null;current=null;network.Dispose();patch.UnpatchAll("bd2.territory.inputs");}
