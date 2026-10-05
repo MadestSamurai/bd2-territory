@@ -7,6 +7,8 @@ using System.Windows.Threading;
 namespace BD2Territory.Desktop;
 public partial class TerritoryWindow : Window
 {
+ public bool HostedAutomationEnabled => link.Enabled || starting || !controlQueue.IsCompleted || connecting;
+
  private readonly string root;
  private readonly TerritoryControlLink link;
  private readonly DispatcherTimer timer;

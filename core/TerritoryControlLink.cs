@@ -5,7 +5,7 @@ public static class TerritoryJson
  public static T? Read<T>(string path) where T:class
  {try{if(BD2.LocalIpc.DesktopFiles.Read(path,out var live))return live==null?null:JsonSerializer.Deserialize<T>(live);using var s=new FileStream(path,FileMode.Open,FileAccess.Read,FileShare.ReadWrite|FileShare.Delete);return JsonSerializer.Deserialize<T>(s);}catch(Exception e)when(e is IOException or UnauthorizedAccessException or JsonException or TimeoutException or ObjectDisposedException){TerritoryDiagnostics.Throttled(Path.GetDirectoryName(path)!,"read."+Path.GetFileName(path),e);return null;}}
  public static void Write<T>(string path,T value)
- {if(BD2.LocalIpc.DesktopFiles.Write(path,JsonSerializer.SerializeToUtf8Bytes(value)))return;var dir=Path.GetDirectoryName(path)!;Directory.CreateDirectory(dir);var tmp=Path.Combine(dir,Guid.NewGuid().ToString("N")+".tmp");try{File.WriteAllText(tmp,JsonSerializer.Serialize(value));File.Move(tmp,path,true);}finally{if(File.Exists(tmp))File.Delete(tmp);}}
+ {var bytes=JsonSerializer.SerializeToUtf8Bytes(value);if(BD2.LocalIpc.DesktopFiles.Write(path,bytes))return;AtomicSettingsFile.Write(path,bytes);}
 }
 public sealed class TerritoryControlLink:IDisposable
 {

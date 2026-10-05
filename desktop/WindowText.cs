@@ -21,5 +21,6 @@ public partial class LayoutWindow
 {
  WindowText ui=null!;
  void InitializeLanguage()=>ui=new(this,root);
+ public void ApplyHostedLanguage(string language){ui.Language.Select(language);ui.Apply();}
  void Set(FrameworkElement target,string source)=>ui.Set(target,source);
 }

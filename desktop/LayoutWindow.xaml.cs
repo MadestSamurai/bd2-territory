@@ -9,6 +9,7 @@ using Microsoft.Win32;
 namespace BD2Territory.Desktop;
 public partial class LayoutWindow:Window
 {
+ public bool HostedAutomationEnabled => link.Enabled || starting || !controlQueue.IsCompleted || !shutdownTask.IsCompleted;
  private readonly string root;private readonly TerritoryControlLink link;private readonly DispatcherTimer timer;
  private LayoutWorld? world;private LayoutDocument? document;private LayoutQuote? quote;private string token="",prepared="";private bool refreshing,polling,starting,closing;private int viewRevision;
  private Task controlQueue=Task.CompletedTask,shutdownTask=Task.CompletedTask;
