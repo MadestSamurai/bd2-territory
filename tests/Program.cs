@@ -175,6 +175,17 @@ Check(!ResourceReadiness.Mature(1,3)&&!ResourceReadiness.Mature(2,3),"可砍的�
 Check(ResourceReadiness.Mature(3,3)&&ResourceReadiness.Mature(4,3),"达到最终阶段允许正常采集");
 Check(!ResourceReadiness.Mature(0,3)&&!ResourceReadiness.Mature(1,0),"未生长或未知最终阶段不采集");
 Check(ResourceReadiness.Mature(1,1),"本身只有一阶段的资源仍可采集");
+foreach(int minimum in new[]{1,2,3,4,5})
+ foreach(int stage in new[]{0,1,2,3,4,5,6})
+  Check(ResourceReadiness.GatherableGrowth(1,stage,5,minimum)==(stage>=minimum),"砍树阶段下限包含更高阶段，并保护低阶段树");
+Check(!ResourceReadiness.GatherableGrowth(1,2,3,0)&&ResourceReadiness.GatherableGrowth(1,3,3,0),"默认仍只砍完全成熟树");
+Check(!ResourceReadiness.GatherableGrowth(1,3,5,0)&&ResourceReadiness.GatherableGrowth(1,5,5,0),"默认成熟判断跟随未来树木最终阶段");
+foreach(int kind in new[]{2,3})
+ Check(!ResourceReadiness.GatherableGrowth(kind,1,3,1)&&ResourceReadiness.GatherableGrowth(kind,3,3,1),"降低砍树下限不提前采矿或收割作物");
+Check(!ResourceReadiness.GatherableGrowth(1,2,0,1)&&!ResourceReadiness.GatherableGrowth(1,2,3,-1)&&!ResourceReadiness.GatherableGrowth(0,3,3,1),"未知资源、生长状态或非法设置不允许采集");
+Check(JsonSerializer.Deserialize<TerritorySettings>("{}")!.MinimumTreeStage==0&&new TerritorySettings().ValidSettings()&&!new TerritorySettings{MinimumTreeStage=-1}.ValidSettings(),"新装和旧设置均默认成熟，负阶段无效");
+using(var stageWire=new MemoryStream(JsonSerializer.SerializeToUtf8Bytes(new TerritoryControl{MinimumTreeStage=2})))
+ Check(((TerritoryControl)new System.Runtime.Serialization.Json.DataContractJsonSerializer(typeof(TerritoryControl)).ReadObject(stageWire)).MinimumTreeStage==2,"砍树下限跨桌面与Mono序列化传递");
 Check(!ResourceReadiness.EmptyField(false,false,false,false),"服务器世界数据未载入不能冒充空田");
 Check(!ResourceReadiness.EmptyField(true,true,false,false),"服务器仍有作物不能覆盖");
 Check(!ResourceReadiness.EmptyField(true,false,true,false),"已预览或动画尚未释放的田格不能二次预览");
