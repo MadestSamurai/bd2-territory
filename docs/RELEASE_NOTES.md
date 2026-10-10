@@ -49,3 +49,797 @@ Download one edition. ZIPs include both READMEs and licenses. Use SHA256SUMS.txt
 Pause and close the old assistant, then connect with the new version. Local settings are retained. Current components support updates and handoff while the game stays open. If the game itself is disconnected or asking you to log in, restore its connection first.
 
 [Usage and risk disclaimer](https://github.com/MadestSamurai/bd2-territory/blob/main/README.en.md)
+
+
+# BD2 Territory v0.4.3
+
+## 简体中文
+
+### 更新内容
+
+- 网络回执缺失时显示恢复进度，不再因为过期等待记录长期停住自动化。
+- 播种和料理会重新读取当前农田、库存与资源再继续，保留原操作记录，避免重复执行。
+- 改善设置文件短暂占用时的保存，以及统一宿主的连接、语言和窗口协作。
+
+### 下载
+
+适用于 Windows x64。两版功能相同，均为单 EXE，内置简体中文／English。
+
+| 版本 | 运行环境 | 建议 |
+| --- | --- | --- |
+| **Portable** | 内置 .NET 运行时 | 首次使用推荐，下载即用 |
+| **Lite** | 需安装 .NET Desktop Runtime 8 x64 | 已安装运行时，下载更小 |
+
+下载一种版本即可。ZIP 附中英文说明和许可证；SHA256SUMS.txt 可用于核对下载文件。
+
+### 升级
+
+暂停并关闭旧工具，再打开新版连接；本机设置保留。当前组件支持在游戏保持运行时更新和交接；如游戏本身仍显示断线或登录提示，请先恢复游戏连接。
+
+[使用说明与风险声明](https://github.com/MadestSamurai/bd2-territory/blob/main/README.md)
+
+## English
+
+### Changes
+
+- Missing network responses now enter a recoverable state instead of leaving automation permanently waiting.
+- Planting and cooking reconcile current fields, inventory and resources before continuing, preserving uncertain operations without blindly repeating them.
+- Improved settings saves during brief file locks and shared-host connection, language and window integration.
+
+### Downloads
+
+For Windows x64. Both editions have the same features, run as a single EXE and include Simplified Chinese / English.
+
+| Edition | Runtime requirement | Recommended for |
+| --- | --- | --- |
+| **Portable** | .NET included | Most users; download and run |
+| **Lite** | .NET Desktop Runtime 8 x64 required | Smaller download if the runtime is installed |
+
+Download one edition. ZIPs include both READMEs and licenses. Use SHA256SUMS.txt to verify downloaded files.
+
+### Upgrade
+
+Pause and close the old assistant, then connect with the new version. Local settings are retained. Current components support updates and handoff while the game stays open. If the game itself is disconnected or asking you to log in, restore its connection first.
+
+[Usage and risk disclaimer](https://github.com/MadestSamurai/bd2-territory/blob/main/README.en.md)
+
+---
+
+# BD2 Territory v0.4.2
+
+## 简体中文
+
+### 更新内容
+
+- 修复旧售卖记录长期显示“结果未知”，手动清理库存后仍无法开始自动化的问题。
+- 缺失确认时，等待游戏请求结束，再重新读取服务器领地库存和领地币；保留旧记录，按当前余量继续，不重复执行旧售卖。
+- 已确认的售卖不再因后续采集、料理或手动操作改变库存而卡住。未确认交易不会计入已确认售卖统计。
+- 补充售卖请求、库存核对与恢复记录，并覆盖配方切换后费用核对的回归测试。
+
+### 下载
+
+| 版本 | 运行环境 | 建议 |
+| --- | --- | --- |
+| **Portable** | 内置 .NET | 大多数用户，下载即用 |
+| **Lite** | 需要 [.NET Desktop Runtime 8 x64](https://dotnet.microsoft.com/download/dotnet/8.0) | 已安装运行时，下载更小 |
+
+适用于 Windows x64。EXE 可独立运行，无需 Python 或其他工具；ZIP 附双语说明与许可证。使用 `SHA256SUMS.txt` 校验下载。
+
+### 升级
+
+暂停并关闭旧工具，打开新版，点击「连接／更新组件」，连接后开始自动化。保留原有设置、种植进度和售卖记录，不需要手动删除数据。如果旧组件已被未确认售卖卡住、无法交接，正常重启游戏一次后再连接新版。
+
+[使用说明与风险提示](https://github.com/MadestSamurai/bd2-territory/blob/main/README.md)
+
+## English
+
+### Changes
+
+- Fixes old sales remaining pending indefinitely, even after stock is cleared manually.
+- When confirmation is missing, waits for game requests to finish and refreshes territory inventory and currency from the server. Preserves the old record and replans from current stock without replaying the old sale.
+- Confirmed sales no longer become stuck when gathering, cooking or manual actions subsequently change balances. Unconfirmed transactions are not included in confirmed sales totals.
+- Adds sale dispatch, inventory reconciliation and recovery diagnostics, plus regression coverage for payment checks after changing recipes.
+
+### Downloads
+
+| Edition | Runtime requirement | Recommended for |
+| --- | --- | --- |
+| **Portable** | .NET included | Most users; download and run |
+| **Lite** | Requires [.NET Desktop Runtime 8 x64](https://dotnet.microsoft.com/download/dotnet/8.0) | Smaller download with an installed runtime |
+
+For Windows x64. EXEs run independently without Python or other tools; ZIPs include bilingual documentation and licenses. Verify downloads with `SHA256SUMS.txt`.
+
+### Upgrade
+
+Pause and close the previous tool, open this version, select **Connect / update component**, then start automation. Keep existing settings, planting progress and sale records; no manual data deletion is required. If an old component is already stuck waiting for a sale and refuses handoff, restart the game normally once before connecting this version.
+
+[Usage and risk notice](https://github.com/MadestSamurai/bd2-territory/blob/main/README.en.md)
+
+# BD2 Territory v0.4.1
+
+## 简体中文
+
+### 更新内容
+
+- 首个正式版，软件窗口、程序版本与下载包统一为 0.4.1。
+- 修复连接时界面未响应：状态、诊断和布局读取在后台执行，暂停立即生效，关闭窗口不再无限等待。
+- 修复布局预检结束后立即重新预检或导入时，旧停止通知误取消新操作的问题。
+- 支持兼容组件在同一游戏进程内更新和交接，补齐连接各阶段的诊断日志。
+- 容量保护始终开启，只出售超出保留阈值的部分。阈值为 100–9900，默认 9900；保留物品分类和锁定检查。
+- 收完本批农作物后集中补种，再采矿与砍树；按实际农田分组批量播种，不要求 100 格或全部连片。
+- 保留配方与固定作物种植、自动料理、A* 寻路、布局预检与导入，以及中英语言切换。
+
+### 下载
+
+| 版本 | 运行环境 | 建议 |
+| --- | --- | --- |
+| **Portable** | 内置 .NET | 大多数用户，下载即用 |
+| **Lite** | 需要 [.NET Desktop Runtime 8 x64](https://dotnet.microsoft.com/download/dotnet/8.0) | 已安装运行时，下载更小 |
+
+适用于 Windows x64。EXE 可独立运行，无需 Python 或其他工具；ZIP 附双语说明与许可证。使用 `SHA256SUMS.txt` 校验下载。
+
+### 升级
+
+暂停并关闭旧工具，打开新版，点击「连接／更新组件」，连接完成后再开始。已有设置及种植进度保留；支持交接的组件无需重启游戏，旧组件首次迁移可能需要正常重启游戏一次。
+
+[使用说明与风险提示](https://github.com/MadestSamurai/bd2-territory/blob/main/README.md)
+
+## English
+
+### Changes
+
+- First stable release. Application windows, version metadata and downloads use 0.4.1.
+- Fixes connection freezes: state, diagnostic and layout reads run in the background. Pause takes effect immediately; closing no longer waits indefinitely.
+- Fixes a delayed completion notification cancelling a new layout preview or import.
+- Supports compatible component updates and handoff within the same game process, with diagnostics for each connection stage.
+- Capacity protection stays enabled and sells only stock above the retained quantity. Set the threshold from 100 to 9900, default 9900; item eligibility and lock checks remain in place.
+- Harvests the current crop batch and replants before mining and logging. Batch planting uses actual field groups without requiring 100 connected fields.
+- Retains recipe and fixed-crop planting, automatic cooking, A* routing, layout preview/import and Chinese/English switching.
+
+### Downloads
+
+| Edition | Runtime requirement | Recommended for |
+| --- | --- | --- |
+| **Portable** | .NET included | Most users; download and run |
+| **Lite** | Requires [.NET Desktop Runtime 8 x64](https://dotnet.microsoft.com/download/dotnet/8.0) | Smaller download with an installed runtime |
+
+For Windows x64. EXEs run independently without Python or other tools; ZIPs include bilingual documentation and licenses. Verify downloads with `SHA256SUMS.txt`.
+
+### Upgrade
+
+Pause and close the previous tool, open this version and select **Connect / update component**. Start after connection completes. Existing settings and planting progress are retained. Components supporting handoff do not require a restart; older components may require one normal game restart during migration.
+
+[Usage and risk notice](https://github.com/MadestSamurai/bd2-territory/blob/main/README.en.md)
+
+---
+
+# BD2 Territory v0.4.0（未发布候选 / Unpublished candidate）
+
+此候选未公开发布，请使用 0.4.1 正式版。This candidate was not published; use the 0.4.1 stable release.
+
+## 简体中文
+
+### 更新内容
+
+- 首个正式版，软件窗口、程序版本与下载包统一为 0.4.0。
+- 修复连接时界面未响应：状态、诊断和布局读取在后台执行，暂停立即生效，关闭窗口不再无限等待。
+- 支持兼容组件在同一游戏进程内更新和交接，补齐连接各阶段的诊断日志。
+- 容量保护始终开启，只出售超出保留阈值的部分。阈值为 100–9900，默认 9900；保留物品分类和锁定检查。
+- 收完本批农作物后集中补种，再采矿与砍树；按实际农田分组批量播种，不要求 100 格或全部连片。
+- 保留配方与固定作物种植、自动料理、A* 寻路、布局预检与导入，以及中英语言切换。
+
+### 下载
+
+| 版本 | 运行环境 | 建议 |
+| --- | --- | --- |
+| **Portable** | 内置 .NET | 大多数用户，下载即用 |
+| **Lite** | 需要 [.NET Desktop Runtime 8 x64](https://dotnet.microsoft.com/download/dotnet/8.0) | 已安装运行时，下载更小 |
+
+适用于 Windows x64。EXE 可独立运行，无需 Python 或其他工具；ZIP 附双语说明与许可证。使用 `SHA256SUMS.txt` 校验下载。
+
+### 升级
+
+暂停并关闭旧工具，打开新版，点击「连接／更新组件」，连接完成后再开始。已有设置及种植进度保留；支持交接的组件无需重启游戏，旧组件首次迁移可能需要正常重启游戏一次。
+
+[使用说明与风险提示](https://github.com/MadestSamurai/bd2-territory/blob/main/README.md)
+
+## English
+
+### Changes
+
+- First stable release. Application windows, version metadata and downloads use 0.4.0.
+- Fixes connection freezes: state, diagnostic and layout reads run in the background. Pause takes effect immediately; closing no longer waits indefinitely.
+- Supports compatible component updates and handoff within the same game process, with diagnostics for each connection stage.
+- Capacity protection stays enabled and sells only stock above the retained quantity. Set the threshold from 100 to 9900, default 9900; item eligibility and lock checks remain in place.
+- Harvests the current crop batch and replants before mining and logging. Batch planting uses actual field groups without requiring 100 connected fields.
+- Retains recipe and fixed-crop planting, automatic cooking, A* routing, layout preview/import and Chinese/English switching.
+
+### Downloads
+
+| Edition | Runtime requirement | Recommended for |
+| --- | --- | --- |
+| **Portable** | .NET included | Most users; download and run |
+| **Lite** | Requires [.NET Desktop Runtime 8 x64](https://dotnet.microsoft.com/download/dotnet/8.0) | Smaller download with an installed runtime |
+
+For Windows x64. EXEs run independently without Python or other tools; ZIPs include bilingual documentation and licenses. Verify downloads with `SHA256SUMS.txt`.
+
+### Upgrade
+
+Pause and close the previous tool, open this version and select **Connect / update component**. Start after connection completes. Existing settings and planting progress are retained. Components supporting handoff do not require a restart; older components may require one normal game restart during migration.
+
+[Usage and risk notice](https://github.com/MadestSamurai/bd2-territory/blob/main/README.en.md)
+
+---
+
+# 0.3.14-beta.1
+
+连接卡死修复与下载说明见 [本版说明 / Release notes](release-0.3.14-beta.1.md)。
+
+---
+
+# BD2 Territory v0.3.11-beta.1
+
+## 简体中文
+
+### 更新内容
+
+- 修复采集和种植交替过于频繁：先收完本轮成熟资源，再集中批量播种。
+- 一轮目标保持有限，新刷新资源留到下一轮；播种期间不再为了新成熟作物来回切换。
+- 分散农田仍按游戏实际预览连续播种，无需100格。失败目标保留重试，预算不足也不阻塞采集。
+- 显示当前阶段和剩余目标；保留配方比例、固定作物、费用核对及超阈值库存处理。
+
+### 下载
+
+| 版本 | 运行环境 | 建议 |
+| --- | --- | --- |
+| **Portable** | 自带 .NET，无需另装运行库 | 大多数用户 |
+| **Lite** | 需要 .NET Desktop Runtime 8 x64 | 已安装桌面运行库、希望减小下载体积 |
+
+两版功能相同，内置简体中文／English。EXE 可独立使用；ZIP 附带双语说明与许可证。用 `SHA256SUMS.txt` 核对下载。
+
+### 升级
+
+暂停并关闭旧工具，打开新版，点击「连接／更新组件」后开始。已有设置和待确认播种记录保留；无需重摆农田，也不需要开启新选项。
+
+作者发布版免费。第三方收费不代表作者参与、背书或提供服务。[使用说明与风险提示](https://github.com/MadestSamurai/bd2-territory/blob/main/README.md)。
+
+## English
+
+### Changes
+
+- Fixes frequent switching between harvesting and planting. Finish a gathering pass before planting in batches.
+- Each pass keeps a finite target set. New resources wait for the next pass, and newly mature crops do not interrupt planting.
+- Disconnected fields still use consecutive native preview groups, with no 100-field requirement. Failed targets remain queued for retry; an exhausted planting budget does not block gathering.
+- Shows the current phase and remaining targets. Preserves recipe ratios, fixed crops, cost checks and surplus-inventory handling.
+
+### Downloads
+
+| Build | Runtime | Recommended for |
+| --- | --- | --- |
+| **Portable** | Includes .NET; no separate runtime needed | Most users |
+| **Lite** | Requires .NET Desktop Runtime 8 x64 | Smaller download when the desktop runtime is installed |
+
+Both builds have identical features and include Simplified Chinese / English. EXEs run independently; ZIPs include bilingual documentation and licenses. Verify downloads with `SHA256SUMS.txt`.
+
+### Upgrade
+
+Pause and close the old tool, open this version and select **Connect / update component**, then start. Existing settings and unresolved planting records are preserved. No layout changes or new option are needed.
+
+Official releases are free. Third-party fees do not imply the author's involvement, endorsement or support. [Usage and risk notice](https://github.com/MadestSamurai/bd2-territory/blob/main/README.en.md).
+
+---
+
+# BD2 Territory v0.3.10-beta.1
+
+## 简体中文
+
+### 更新内容
+
+- 移除必须 100 格农田、全部连片才能种植的限制，使用当前农田即可。
+- 按游戏实际预览数量批量播种，分散农田分片处理，小田与零散单格也能继续种。
+- 按库存和生长中作物的预计产量持续平衡料理原料比例；固定作物模式同样适用。
+- 播种费用和进度按本批实际格数显示、核对；已有设置与待结算批次保留。
+
+### 下载
+
+| 版本 | 运行环境 | 建议 |
+| --- | --- | --- |
+| **Portable** | 自带 .NET，无需另装运行库 | 大多数用户 |
+| **Lite** | 需要 .NET Desktop Runtime 8 x64 | 已安装桌面运行库、希望减小下载体积 |
+
+两版功能相同，内置简体中文／English。EXE 可独立使用；ZIP 附带双语说明与许可证。用 `SHA256SUMS.txt` 核对下载。
+
+### 升级
+
+暂停并关闭旧工具，打开新版，点击「连接／更新组件」后开始。无需重摆农田；配方比例在连续种植中平衡，每片仍以同种作物批量播种。
+
+作者发布版免费。第三方收费不代表作者参与、背书或提供服务。[使用说明与风险提示](https://github.com/MadestSamurai/bd2-territory/blob/main/README.md)。
+
+## English
+
+### Changes
+
+- Removes the requirement for exactly 100 connected fields. Use your existing farm layout.
+- Plants actual native preview groups. Disconnected areas, smaller plots and isolated single fields are supported.
+- Balances recipe ingredients using inventory and expected growing yield across successive batches. Fixed-crop mode supports the same layouts.
+- Shows and checks the actual field count and charge for each batch. Settings and unresolved planting transactions are retained.
+
+### Downloads
+
+| Build | Runtime | Recommended for |
+| --- | --- | --- |
+| **Portable** | Includes .NET; no separate runtime needed | Most users |
+| **Lite** | Requires .NET Desktop Runtime 8 x64 | Smaller download when the desktop runtime is installed |
+
+Both builds have identical features and include Simplified Chinese / English. EXEs run independently; ZIPs include bilingual documentation and licenses. Verify downloads with `SHA256SUMS.txt`.
+
+### Upgrade
+
+Pause and close the old tool. Open this version and select Connect / update component before starting. No field rearrangement is needed. Recipe ratios balance over successive planting cycles; each native batch still uses one crop.
+
+Official releases are free. Third-party fees do not imply the author's involvement, endorsement or support. [Usage and risk notice](https://github.com/MadestSamurai/bd2-territory/blob/main/README.en.md).
+
+---
+
+# BD2 Territory v0.3.9-beta.1
+
+## 简体中文
+
+### 更新内容
+
+- 新增可选自动售卖：保留数量可设为 100–9900，默认 9900，只卖超出部分，默认关闭。
+- 只处理领地商店可售材料、采集／种植产物与料理；锁定物品、建筑装饰、装备及属性石排除。
+- 自动料理优先，售卖逐批核对游戏回执、库存与领地币；结果未知时暂停并保留记录，避免重复售卖。
+- 主窗口增加免费开源署名：GitHub MadestSamurai／B站 MadSamurai。
+- 新增「来源与说明」，可查看并复制官方仓库与下载链接；随界面切换中英文。
+- 统一双语 README、来源与风险说明，ZIP 附带完整说明；MIT 许可证保持不变。
+
+### 下载
+
+| 版本 | 运行环境 | 建议 |
+| --- | --- | --- |
+| **Portable** | 自带 .NET，无需另装运行库 | 大多数用户 |
+| **Lite** | 需要 .NET Desktop Runtime 8 x64 | 已安装桌面运行库、希望减小下载体积 |
+
+两版功能相同，内置简体中文／English。EXE 可独立使用；ZIP 附带双语说明与许可证。用 `SHA256SUMS.txt` 核对下载。
+
+### 升级
+
+暂停并关闭旧工具，打开新版，点击「连接／更新组件」后开始。已有设置保留，自动售卖需手动开启。
+
+作者发布版免费。第三方收费不代表作者参与、背书或提供服务。[使用说明与风险提示](https://github.com/MadestSamurai/bd2-territory/blob/main/README.md)。
+
+## English
+
+### Changes
+
+- Adds optional surplus selling: retain 100–9900 per item, default 9900; sell only the excess. Disabled by default.
+- Limits sales to eligible territory materials, produce and meals; excludes locked items, decorations, equipment and attribute stones.
+- Cooking takes priority. Each sale checks the native reply, inventory and territory currency; unknown outcomes pause without resubmission.
+- Adds free-release attribution to the main window: GitHub MadestSamurai / Bilibili MadSamurai.
+- Adds About & source with selectable official repository and download links, following the selected UI language.
+- Standardizes bilingual READMEs and source/risk notices, also included in ZIPs. The MIT License is unchanged.
+
+### Downloads
+
+| Build | Runtime | Recommended for |
+| --- | --- | --- |
+| **Portable** | Includes .NET; no separate runtime needed | Most users |
+| **Lite** | Requires .NET Desktop Runtime 8 x64 | Smaller download when the desktop runtime is installed |
+
+Both builds have identical features and include Simplified Chinese / English. EXEs run independently; ZIPs include bilingual documentation and licenses. Verify downloads with `SHA256SUMS.txt`.
+
+### Upgrade
+
+Pause and close the old tool. Open this version and select Connect / update component before starting. Settings are retained; surplus selling must be enabled explicitly.
+
+Official releases are free. Third-party fees do not imply the author's involvement, endorsement or support. [Usage and risk notice](https://github.com/MadestSamurai/bd2-territory/blob/main/README.en.md).
+
+---
+
+# BD2 Territory v0.3.8-beta.1
+
+## 简体中文
+
+### 更新内容
+
+- 减少开启自动料理后、采集区与农田之间往返时的重复寻路等待。
+- 已检测的地面与通路不再按时间清空；采集、建筑移动或桥梁变化只更新受影响区域，料理和库存变化不触发重建。
+- 保留粗网格搜索进度，沿游戏实际桥梁规划窄路；支持不同目标之间正向或反向复用已检测通路。
+- 包含水面只走桥梁、矿点采集站位和领地地形台阶的修复。
+
+### 下载
+
+| 版本 | 运行环境 | 建议 |
+| --- | --- | --- |
+| Portable | 自带 .NET | 大多数用户 |
+| Lite | .NET Desktop Runtime 8 x64 | 已安装桌面运行库 |
+
+两版功能相同，内置中英切换。EXE 可独立运行；ZIP 包含双语说明和许可证，下载校验见 `SHA256SUMS.txt`。
+
+### 升级
+
+暂停并关闭旧工具，打开新版，点击「连接／更新组件」，连接完成后再开始。保留已有设置及种植进度。
+
+## English
+
+### Changes
+
+- Reduces repeated route-planning waits when moving between gathering areas and farms with automatic cooking enabled.
+- Retains checked terrain and routes instead of expiring them on a timer. Harvesting, moved structures and bridge changes update affected areas; cooking and inventory changes do not rebuild the map.
+- Preserves coarse-grid search progress, follows native bridge corridors and reuses checked routes in either direction for different targets.
+- Includes water-only-via-bridges protection, improved ore interaction positions and native terrain-step handling.
+
+### Downloads
+
+| Build | Runtime | Recommended for |
+| --- | --- | --- |
+| Portable | Includes .NET | Most users |
+| Lite | .NET Desktop Runtime 8 x64 | Users with the desktop runtime installed |
+
+Both builds have the same features and include Chinese/English switching. Each EXE runs on its own; ZIPs include bilingual documentation and licenses. Verify downloads with `SHA256SUMS.txt`.
+
+### Upgrade
+
+Pause and close the old tool, open the new build and select **Connect / update component** before starting. Existing settings and planting progress are retained.
+
+---
+
+# BD2 Territory v0.3.7-beta.1
+
+## 简体中文
+
+### 更新内容
+
+- 水面一律禁止通行，只通过已放置桥梁的实际通道；桥旁、预览桥和已移除的桥不会放行。
+- A*、可选原生寻路、路线复用、通行试探及冲刺脱困统一检查水域，修复底板碰撞被误当作水面通路的问题。
+- 精确检查经过的水域格子边界，避免斜线走位从两个陆地路点之间切过水面。
+
+### 下载
+
+| 版本 | 运行环境 | 建议 |
+| --- | --- | --- |
+| Portable | 自带 .NET | 大多数用户 |
+| Lite | .NET Desktop Runtime 8 x64 | 已安装桌面运行库 |
+
+两版功能相同，内置中英切换。EXE 可独立运行；ZIP 包含双语说明和许可证，下载校验见 `SHA256SUMS.txt`。
+
+### 升级
+
+暂停并关闭旧工具，打开新版，点击「连接／更新组件」，连接完成后再开始。保留已有设置及种植进度。
+
+## English
+
+### Changes
+
+- Makes water impassable except through an existing bridge's actual crossing corridor. Adjacent water, placement previews and removed bridges stay blocked.
+- Applies the water guard to A*, optional native navigation, cached routes, movement trials and recovery dashes. A broad floor collider no longer counts as a path across water.
+- Checks every crossed terrain-cell boundary, preventing diagonal shortcuts through water between two dry endpoints.
+
+### Downloads
+
+| Build | Runtime | Recommended for |
+| --- | --- | --- |
+| Portable | Includes .NET | Most users |
+| Lite | .NET Desktop Runtime 8 x64 | Users with the desktop runtime installed |
+
+Both builds have the same features and include Chinese/English switching. Each EXE runs on its own; ZIPs include bilingual documentation and licenses. Verify downloads with `SHA256SUMS.txt`.
+
+### Upgrade
+
+Pause and close the old tool, open the new build and select **Connect / update component** before starting. Existing settings and planting progress are retained.
+
+---
+
+# BD2 Territory v0.3.6-beta.1
+
+## 简体中文
+
+### 更新内容
+
+- 修复矿点附近目标站位落入角色碰撞范围的问题；确认到不了的站位会换面重试。
+- 修复领地地形台阶被误判为障碍：按连续台阶高度规划，区分上下层缓存，并读取游戏保存的正常跨阶高度。
+- 区分行走时的跨阶空间和采集时的停止站位，保留 NPC／工人的原生碰撞过滤规则。
+
+### 下载
+
+| 版本 | 运行环境 | 建议 |
+| --- | --- | --- |
+| Portable | 自带 .NET | 大多数用户 |
+| Lite | .NET Desktop Runtime 8 x64 | 已安装桌面运行库 |
+
+两版功能相同，内置中英切换。EXE 可独立运行；ZIP 包含双语说明和许可证，下载校验见 `SHA256SUMS.txt`。
+
+### 升级
+
+暂停并关闭旧工具，打开新版，点击「连接／更新组件」，连接完成后再开始。保留已有设置及种植进度。
+
+## English
+
+### Changes
+
+- Fixes gathering destinations that overlap the player's collision body near ore. An unreachable final stand is retired before trying another side.
+- Fixes false obstacles on built-in terrain stairs by following consecutive tread heights, separating floor-level caches and reading the game's saved normal step height.
+- Separates stepping clearance while walking from final gathering clearance, retaining native collision filtering for NPCs and workers.
+
+### Downloads
+
+| Build | Runtime | Recommended for |
+| --- | --- | --- |
+| Portable | Includes .NET | Most users |
+| Lite | .NET Desktop Runtime 8 x64 | Users with the desktop runtime installed |
+
+Both builds have the same features and include Chinese/English switching. Each EXE runs on its own; ZIPs include bilingual documentation and licenses. Verify downloads with `SHA256SUMS.txt`.
+
+### Upgrade
+
+Pause and close the old tool, open the new build and select **Connect / update component** before starting. Existing settings and planting progress are retained.
+
+---
+
+# BD2 Territory v0.3.5-beta.1
+
+## 简体中文
+
+### 更新内容
+
+- 通行预测改用角色实际的碰撞体、碰撞过滤、台阶高度及坡度规则，修正可行走摆设被误判为障碍。
+- 移除 NPC 和工人的额外虚拟占位，避免挡住本来可以通行或采集的位置。
+- 预测失败时增加有限的正常移动验证；连续 3 秒无推进才暂记障碍，修复重算禁行区把角色困在原地的问题。
+
+### 下载
+
+| 版本 | 运行环境 | 建议 |
+| --- | --- | --- |
+| Portable | 自带 .NET | 大多数用户 |
+| Lite | .NET Desktop Runtime 8 x64 | 已安装桌面运行库 |
+
+两版功能相同，内置中英切换。EXE 可独立运行；ZIP 包含双语说明和许可证，下载校验见 `SHA256SUMS.txt`。
+
+### 升级
+
+暂停并关闭旧工具，打开新版，点击「连接／更新组件」，连接完成后再开始。保留已有设置及种植进度。
+
+## English
+
+### Changes
+
+- Predicts traversal using the character’s actual collider, collision filters, step height and slope rules, reducing false obstacles on walkable decorations.
+- Removes synthetic NPC and worker footprints that could block otherwise valid movement or gathering positions.
+- Adds bounded ordinary-movement checks when prediction fails. Only 3 seconds of observed stalling creates a temporary exclusion; recovery can leave an overlapping exclusion instead of trapping itself.
+
+### Downloads
+
+| Build | Runtime | Recommended for |
+| --- | --- | --- |
+| Portable | Includes .NET | Most users |
+| Lite | .NET Desktop Runtime 8 x64 | Users with the desktop runtime installed |
+
+Both builds have the same features and include Chinese/English switching. Each EXE runs on its own; ZIPs include bilingual documentation and licenses. Verify downloads with `SHA256SUMS.txt`.
+
+### Upgrade
+
+Pause and close the old tool, open the new build and select **Connect / update component** before starting. Existing settings and planting progress are retained.
+
+---
+
+# BD2 Territory v0.3.4-beta.1
+
+## 简体中文
+
+### 更新内容
+
+- 修复重新开始后沿用旧空田统计，导致已经预览 100 格却提示农田不连通的问题。
+- 区分空田缓存待核对、真实占用、地块身份异常和预览数量不足；等待核对期间不付款，数量异常时尝试重新生成一次游戏预览。
+- 修复部分非默认料理在播种确认时被错误拦截的问题，固定作物种植同步修复。
+- 包含上一候选版的固定作物选择、自适应 A* 网格和导航缓存。
+
+### 下载
+
+| 版本 | 运行环境 | 建议 |
+| --- | --- | --- |
+| Portable | 自带 .NET | 大多数用户 |
+| Lite | .NET Desktop Runtime 8 x64 | 已安装桌面运行库 |
+
+两版功能相同，内置中英切换。EXE 可独立运行；ZIP 包含双语说明和许可证，下载校验见 `SHA256SUMS.txt`。
+
+### 升级
+
+暂停并关闭旧工具，打开新版，点击「连接／更新组件」，连接完成后再开始。保留已有设置及种植进度，无需为此错误重新摆放农田。
+
+## English
+
+### Changes
+
+- Fixes restarting with stale empty-field counts, which could report disconnected fields even when the game preview already contained 100 cells.
+- Separates pending cache checks, occupied fields, invalid field identities and incorrect preview sizes. No payment occurs while checks are pending; an incorrect preview size triggers one native refresh.
+- Fixes planting confirmation incorrectly rejecting some non-default recipes, including fixed-crop planting with those recipes.
+- Includes fixed-crop selection, adaptive A* grids and navigation caching from the previous candidate.
+
+### Downloads
+
+| Edition | Runtime requirement | Recommended for |
+| --- | --- | --- |
+| Portable | Includes .NET | Most users |
+| Lite | .NET Desktop Runtime 8 x64 | Desktop runtime already installed |
+
+Both editions include Chinese and English. The EXE runs independently; ZIP packages include bilingual documentation and licenses. Verify downloads with `SHA256SUMS.txt`.
+
+### Upgrade
+
+Pause and close the old tool, open the new version and select **Connect / update component**. Start after connecting. Existing settings and planting progress are kept; this error does not require rearranging fields.
+
+---
+
+# BD2 Territory v0.3.3-beta.1
+
+## 简体中文
+
+### 更新内容
+
+- 新增「固定种类作物」：连接后选择已解锁作物，每批 100 格持续种植；原有按料理配比种植仍可选择。
+- 切换种植方式或作物先等待当前播种确认，保留预算与进度。固定种植也可独立开启自动料理。
+- 修复采石场等窄出口可能被粗网格漏判的问题；必要时自动细化网格。
+- 缓存地面检测和已找到的通路，空闲时少量预热，减少重复规划等待；执行时仍实时检查工人和障碍。
+- 修复起点与工人占位重叠时无法向外规划，以及到达受阻后原地停等的问题。默认继续使用 A*，NavMesh 保持可选且默认关闭。
+
+### 下载
+
+| 版本 | 运行环境 | 建议 |
+| --- | --- | --- |
+| Portable | 自带 .NET | 大多数用户 |
+| Lite | .NET Desktop Runtime 8 x64 | 已安装桌面运行库 |
+
+两版功能相同，内置中英切换。EXE 可独立运行；ZIP 包含双语说明和许可证，下载校验见 `SHA256SUMS.txt`。
+
+### 升级
+
+暂停并关闭旧工具，打开新版，点击「连接／更新组件」，连接完成后再开始。已有种植设置保留，默认沿用料理配比；需要固定作物时在「种植与料理」切换。
+
+## English
+
+### Changes
+
+- Adds **Plant a fixed crop**: choose an unlocked crop after connecting and keep planting it in batches of 100. Recipe balancing remains available.
+- Planting changes wait for the current batch to be confirmed and preserve spending and progress. Automatic cooking can also be used with fixed planting.
+- Refines the grid when a narrow quarry exit cannot be found on the coarse grid.
+- Caches ground checks and discovered routes, with small idle-time warmups to reduce repeated planning. Workers and obstacles are still checked live while moving.
+- Fixes planning when a worker overlaps the starting position, and waiting at an obstructed arrival point. A* remains the default; NavMesh is optional and off by default.
+
+### Downloads
+
+| Edition | Runtime requirement | Recommended for |
+| --- | --- | --- |
+| Portable | Includes .NET | Most users |
+| Lite | .NET Desktop Runtime 8 x64 | Desktop runtime already installed |
+
+Both editions include Chinese and English. The EXE runs independently; ZIP packages include bilingual documentation and licenses. Verify downloads with `SHA256SUMS.txt`.
+
+### Upgrade
+
+Pause and close the old tool, open the new version and select **Connect / update component**. Start after connecting. Existing planting preferences are kept and default to recipe balancing; choose fixed planting under **Planting and cooking** when needed.
+
+---
+
+# BD2 Territory v0.3.2-beta.1
+
+## 简体中文
+
+### 更新内容
+
+- 砍树落点参考真实树干碰撞体，缩小与树干的距离，减少在探测圈边缘空挥。
+- 修复重新走位被误判为“已经到达”的问题。空挥后的新路线必须实际走到位。
+- 一次完整空挥后改换站位，并暂存失败站位；收获旁边资源不会掩盖所选目标未命中。
+- 保持 A* 为默认，NavMesh 默认关闭；保留动作及服务器结算等待。
+
+### 下载
+
+| 版本 | 运行环境 | 建议 |
+| --- | --- | --- |
+| Portable | 自带 .NET | 大多数用户 |
+| Lite | .NET Desktop Runtime 8 x64 | 已安装桌面运行库 |
+
+两版功能相同，内置中英切换。EXE 可独立运行；ZIP 包含双语说明和许可证，下载校验见 `SHA256SUMS.txt`。
+
+### 升级
+
+暂停并关闭旧工具，打开新版，点击「连接／更新组件」。等待连接完成后重新开始，原配方及预算设置保留。
+
+## English
+
+### Changes
+
+- Logging approaches the actual trunk collider instead of stopping at the edge of its detection circle.
+- Fixes recovery routes reporting arrival before the character has moved to the new stand.
+- Repositions after one fully settled missed action and temporarily remembers failed stands. Harvesting a nearby resource no longer hides a miss against the selected target.
+- A* remains the default and NavMesh stays off by default. Tool animations and server settlement still finish before recovery begins.
+
+### Downloads
+
+| Edition | Runtime requirement | Recommended for |
+| --- | --- | --- |
+| Portable | Includes .NET | Most users |
+| Lite | .NET Desktop Runtime 8 x64 | Desktop runtime already installed |
+
+Both editions include Chinese and English. The EXE runs independently; ZIP packages include bilingual documentation and licenses. Verify downloads with `SHA256SUMS.txt`.
+
+### Upgrade
+
+Pause and close the old tool, open the new version and select **Connect / update component**. Start automation after connecting. Existing recipe and budget preferences are kept.
+
+---
+
+# BD2 Territory v0.3.1-beta.1
+
+## 简体中文
+
+### 更新内容
+
+- 默认使用 A* 网格计算绕障，通过方向移动接近采矿、砍树和种植目标。
+- 新增「使用游戏 NavMesh 寻路」开关，默认关闭，选择自动保存。关闭后立即切回 A*；开启从下一次移动生效。
+- A* 保留载具赶路、冲刺脱困和工人避障；找不到路线时保留目标重试，不会自动启用 NavMesh。
+- 修复同一目标重试耗尽后可能无法重新规划的问题，并在到达时核对实际操作范围。
+
+### 下载
+
+| 版本 | 运行环境 | 建议 |
+| --- | --- | --- |
+| **Portable** | 自带 .NET，无需另装运行库 | 大多数用户 |
+| **Lite** | 需要 .NET Desktop Runtime 8 x64 | 已安装桌面运行库、希望减小下载体积 |
+
+两版功能一致，均内置中英切换。EXE 可独立运行；ZIP 附双语说明和许可证。可用 `SHA256SUMS.txt` 校验下载。
+
+### 升级
+
+暂停并关闭旧工具，打开新版，点击「连接／更新组件」，再开始自动化。已有配方和进度保留；旧设置中的 NavMesh 默认关闭。Beta 版建议先观察一次短距离采集。
+
+## English
+
+### Changes
+
+- A* grid routing is now the default for approaching mining, logging and farming targets using directional movement.
+- Adds an optional **Use game NavMesh navigation** setting, off by default and saved automatically. Turning it off switches to A* immediately; turning it on applies to the next route.
+- A* retains vehicles, recovery dashes and worker avoidance. Failed routes keep their targets queued for retry and never enable NavMesh automatically.
+- Fixes exhausted retry budgets preventing the same target from being planned again, and checks the actual interaction range on arrival.
+
+### Downloads
+
+| Edition | Runtime requirement | Recommended for |
+| --- | --- | --- |
+| **Portable** | Includes .NET | Most users |
+| **Lite** | .NET Desktop Runtime 8 x64 | Users with the desktop runtime installed |
+
+Both editions have identical features and built-in Chinese/English switching. The EXE runs on its own; ZIP packages include bilingual documentation and licenses. Verify downloads with `SHA256SUMS.txt`.
+
+### Upgrade
+
+Pause and close the old tool, launch the new version, select **Connect / update component**, then start automation. Recipes and progress are kept; older settings default to NavMesh off. For this beta, observe a short gathering route first.
+
+---
+
+# 0.3.0-beta.1 / Beta
+
+## 简体中文
+
+独立领地助手首次公开测试版，内置中英切换。
+
+- 配方显示实际料理名、原料比例与解锁状态。
+- 保留成熟资源采集、实体与工人避障、百格配方种植和布局预检／导入。
+- 新增可选自动料理，每批上限 1–1000，默认关闭；制作记录和服务器回执核对避免重复消耗。
+- 双语说明、独立 Portable／Lite、下载校验和无游戏安装构建。
+
+## English
+
+First public beta of the standalone territory assistant, with Chinese and English in one application.
+
+- Recipes display actual dish names, ingredient ratios and unlock status.
+- Includes mature-resource gathering, obstacle and worker avoidance, 100-field recipe farming and layout preview/import.
+- Adds optional automatic cooking with a batch limit of 1–1000, off by default. Journals and server confirmation prevent blind duplicate requests.
+- Bilingual documentation, Portable/Lite editions, checksums and builds without a game installation.
+
+| 版本 / Edition | 运行环境 / Runtime | 建议 / Recommendation |
+| --- | --- | --- |
+| Portable | 自带 .NET / Includes .NET | 大多数用户 / Most users |
+| Lite | .NET Desktop Runtime 8 x64 | 已有桌面运行库 / Runtime already installed |
+
+两版功能相同。Beta 建议先用小预算、小批量确认效果。 / Both editions have the same features. Start with a small budget and batch size when evaluating this beta.
