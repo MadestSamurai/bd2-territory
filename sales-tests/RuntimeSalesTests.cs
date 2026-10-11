@@ -60,6 +60,20 @@ namespace BD2Territory.Runtime {
    Check(e.sales.Pending&&TerritoryBindings.Refreshes==previous+2&&TerritoryBindings.Sales==1,"failed read retries only the read, never the sale");
    e.network.LastSalesSnapshot=Snapshot();e.network.LastSalesSnapshot.Token="wrong";e.SalesTick(s,e.control,now+TimeSpan.FromSeconds(32).Ticks);Check(e.sales.Pending,"stale refresh for another transaction rejected");
    e.network.LastSalesSnapshot=Snapshot();TerritoryBindings.User.OwnerIndex=2;bool rejected=false;try{e.SalesTick(s,e.control,now+TimeSpan.FromSeconds(33).Ticks);}catch(InvalidOperationException){rejected=true;}Check(rejected&&e.sales.Pending,"cross-account refresh rejected");
+   TerritoryBindings.User.OwnerIndex=1;TerritoryBindings.Stock.Count=205;TerritoryBindings.Currency=20;
+   e=new RuntimeEngine();e.sales=new SalesProgress{Account="1"};e.salesPath="new-cooking.json";e.control.Cooking=true;e.control.RecipeId=1;
+   var batch=CookingSales.Plan(e.SaleStocks(),10,100,0);int sent=TerritoryBindings.Sales;
+   Check(e.SalesTick(s,e.control,now,batch,"cooking-batch")&&TerritoryBindings.Sales==sent+1&&TerritoryBindings.Request.Single().SellCount==200,"production sender sells two complete cooking batches and retains five");
+   Check(e.sales.Purpose=="cooking-batch"&&e.sales.Recipe==1&&e.sales.Pending,"cooking sale is journaled before native dispatch");
+   e.SalesTick(s,e.control,now+1,batch,"cooking-batch");Check(TerritoryBindings.Sales==sent+1,"pending cooking sale never dispatches twice");
+   e.network.LastSaleReply=new(){Token=e.sales.Token,Matches=true,Accepted=true,Reward=600};TerritoryBindings.Stock.Count=5;TerritoryBindings.Currency=620;e.SettleSales();e.network.Waiting=false;
+   Check(!e.sales.Pending&&e.sales.ConfirmedItems==200&&e.sales.BalancesMatched,"cooking sale uses matching native reply and actual stock/currency");
+   var fund=CookingSales.Plan(e.SaleStocks(),10,100,7);e.control.SellCookingBatches=false;
+   Check(e.SalesTick(s,e.control,now+2,fund,"planting")&&TerritoryBindings.Request.Single().SellCount==3&&e.sales.Purpose=="planting","funding sells only three dishes to cover seven points, independent of batch option");
+   e=new RuntimeEngine();e.sales=new SalesProgress{Account="1"};var priorControl=new TerritoryControl{Enabled=true,OwnerId="owner",Cooking=true,RecipeId=1,ProcessId=42};e.control.Cooking=true;e.control.RecipeId=2;sent=TerritoryBindings.Sales;
+   Check(!e.SalesTick(s,priorControl,now,batch,"cooking-batch")&&TerritoryBindings.Sales==sent,"changing recipe cancels a stale prepared food sale");
+   e.control.RecipeId=1;e.control.Cooking=false;
+   Check(!e.SalesTick(s,priorControl,now,batch,"planting")&&TerritoryBindings.Sales==sent,"disabling cooking cancels funding before dispatch");
    return count;
   }
  }

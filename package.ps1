@@ -29,7 +29,7 @@ foreach($flavor in @('Portable','Lite')){
     $identityPath=Join-Path $check 'identity.json'
     RunCheck @('--identity',('"'+$identityPath+'"'))
     $identity=Get-Content $identityPath -Raw | ConvertFrom-Json
-    if($identity.version -ne $Version -or $identity.runtime -ne 'BD2Territory.Runtime26' -or $identity.compatibility -ne 'local-interface-adaptation' -or $identity.defaultIntervalMs -ne 500 -or $identity.defaultNavigation -ne 'astar' -or $identity.defaultUseNavMesh -ne $false){throw 'Embedded identity differs from release'}
+    if($identity.version -ne $Version -or $identity.runtime -ne 'BD2Territory.Runtime27' -or $identity.compatibility -ne 'local-interface-adaptation' -or $identity.defaultIntervalMs -ne 500 -or $identity.defaultNavigation -ne 'astar' -or $identity.defaultUseNavMesh -ne $false){throw 'Embedded identity differs from release'}
     RunCheck @('--smoke',('"'+$check+'"'))
     $ui=Get-Content (Join-Path $check 'results.json') -Raw | ConvertFrom-Json
     if($ui.status -ne 'pass' -or $ui.assertions.Count -lt 34){throw 'Packaged UI regression failed'}
@@ -39,6 +39,7 @@ foreach($flavor in @('Portable','Lite')){
     if($connection.status -ne 'pass' -or $connection.assertions.Count -lt 18 -or $connection.gameRequests -ne 0){throw 'Packaged connection responsiveness regression failed'}
     RunCheck @('--smoke-en',('"'+(Join-Path $check 'english-system')+'"'))
     if(!$identity.automaticSurplusSales -or !$identity.defaultAutoSell -or $identity.defaultSellThreshold -ne 9900 -or $identity.minSellThreshold -ne 100 -or $identity.maxSellThreshold -ne 9900){throw 'Surplus sale identity differs from release'}
+    if(!$identity.cookingBatchSales -or !$identity.plantingFunding -or !$identity.defaultSellCookingBatches -or !$identity.defaultSellCookingForPlanting -or $identity.defaultCookingSaleBatch -ne 100){throw 'Cooking cashflow identity differs from release'}
     if(!$identity.phasedWorkCycle -or !$identity.dynamicPlantingBatch -or $identity.plantingBatchMode -ne 'native-preview' -or $identity.requiresConnectedFarm -or $identity.ratio -ne '5:3:2' -or $identity.automaticStart){throw 'Recipe or automatic start identity differs'}
     if($ClientManaged){
         $clientReport=Join-Path $check 'client.json'

@@ -55,7 +55,15 @@ public partial class TerritoryWindow {
   Check(PlantingModeBox.SelectedIndex==0&&FixedCropPanel.Visibility==Visibility.Collapsed,"旧设置默认按料理配比种植");await controlQueue;await Dispatcher.InvokeAsync(()=>{},DispatcherPriority.ApplicationIdle);
   PlantingModeBox.SelectedIndex=1;await controlQueue;await Dispatcher.InvokeAsync(()=>{},DispatcherPriority.ApplicationIdle);await StartAsync();Check(!link.Enabled,"固定模式未选作物不能启动");ShowError("");
   FixedSeedBox.SelectedValue=4;await controlQueue;await Dispatcher.InvokeAsync(()=>{},DispatcherPriority.ApplicationIdle);command=TerritoryJson.Read<TerritoryControl>(Path.Combine(root,"control.json"));Check(command?.FixedCrop==true&&command.FixedSeedId==4&&RecipePanel.Visibility==Visibility.Collapsed,"固定作物独立保存，隐藏无关的料理配比");
-  CookingBox.IsChecked=true;await controlQueue;await Dispatcher.InvokeAsync(()=>{},DispatcherPriority.ApplicationIdle);Check(RecipePanel.Visibility==Visibility.Visible,"固定种植同时自动料理时保留料理选择");CookingBox.IsChecked=false;await controlQueue;await Dispatcher.InvokeAsync(()=>{},DispatcherPriority.ApplicationIdle);
+  CookingBox.IsChecked=true;await controlQueue;await Dispatcher.InvokeAsync(()=>{},DispatcherPriority.ApplicationIdle);Check(RecipePanel.Visibility==Visibility.Visible,"固定种植同时自动料理时保留料理选择");
+  Check(CookingSalesPanel.IsEnabled&&SellCookingBatchBox.IsChecked==true&&SellCookingForPlantingBox.IsChecked==true&&CookingSaleBatchBox.Text=="100","自动料理默认整批售卖与补种周转");
+  CookingSaleBatchBox.Text="150";SettingsChanged(this,new());await controlQueue;await Dispatcher.InvokeAsync(()=>{},DispatcherPriority.ApplicationIdle);
+  command=TerritoryJson.Read<TerritoryControl>(Path.Combine(root,"control.json"));saved=TerritoryJson.Read<TerritorySettings>(Path.Combine(root,"settings.json"));
+  Check(command?.CookingSaleBatch==150&&saved?.CookingSaleBatch==150&&command.SellCookingForPlanting,"料理售卖设置下发并保存");
+  CookingSaleBatchBox.Text="0";SettingsChanged(this,new());await controlQueue;await Dispatcher.InvokeAsync(()=>{},DispatcherPriority.ApplicationIdle);await StartAsync();
+  Check(!link.Enabled&&CookingSaleBatchBox.Text=="0"&&TerritoryJson.Read<TerritorySettings>(Path.Combine(root,"settings.json"))?.CookingSaleBatch==150,"无效料理售卖数量保留输入，不覆盖已保存设置");
+  CookingSaleBatchBox.Text="100";SettingsChanged(this,new());await controlQueue;await Dispatcher.InvokeAsync(()=>{},DispatcherPriority.ApplicationIdle);ShowError("");
+  CookingBox.IsChecked=false;await controlQueue;await Dispatcher.InvokeAsync(()=>{},DispatcherPriority.ApplicationIdle);Check(!CookingSalesPanel.IsEnabled,"关闭自动料理时停用料理售卖选项");
   await StartAsync();Check(link.Enabled,"已解锁固定作物可以启动");await StopAsync();
   FixedSeedBox.SelectedValue=9;await controlQueue;await Dispatcher.InvokeAsync(()=>{},DispatcherPriority.ApplicationIdle);await StartAsync();Check(!link.Enabled,"未解锁作物不能启动");ShowError("");FixedSeedBox.SelectedValue=4;await controlQueue;await Dispatcher.InvokeAsync(()=>{},DispatcherPriority.ApplicationIdle);
   saved=TerritoryJson.Read<TerritorySettings>(Path.Combine(root,"settings.json"));Check(saved?.FixedCrop==true&&saved.FixedSeedId==4,"固定作物持久保存");
@@ -85,6 +93,9 @@ public partial class TerritoryWindow {
   Check(new[]{"同种作物 × 37 · 一次提交","等待 37 格整批播种回执","当前 37 格播种费用超出余额或剩余预算；继续处理其他农田、采集和收获","批量预览 37 格，等待空田核对：缓存 2，数据未载入 0，请求未结算 0","等待读取本片农田","本轮采集 · 本轮剩余 25","集中播种","料理／售卖","等待下一轮","本轮采集尚未结束，继续处理成熟资源"}.All(v=>!System.Text.RegularExpressions.Regex.IsMatch(ui.Language.Text(v),"[\u4e00-\u9fff]")),"动态农田数量与状态可完整显示英文");
   Check(UiLabels.All.Values.All(v=>ui.Language.Text(v)!=v||!System.Text.RegularExpressions.Regex.IsMatch(v,"[\u4e00-\u9fff]")),"全部静态界面文本覆盖英文");
   var enBitmap=new RenderTargetBitmap((int)ActualWidth,(int)ActualHeight,96,96,PixelFormats.Pbgra32);enBitmap.Render(this);var enEncoder=new PngBitmapEncoder();enEncoder.Frames.Add(BitmapFrame.Create(enBitmap));using(var f=File.Create(Path.Combine(output,"territory-en.png")))enEncoder.Save(f);
+  CookingBox.IsChecked=true;await controlQueue;await Dispatcher.InvokeAsync(()=>{},DispatcherPriority.ApplicationIdle);CookingSalesPanel.BringIntoView();await Dispatcher.InvokeAsync(()=>{},DispatcherPriority.ApplicationIdle);UpdateLayout();
+  var cookingBitmap=new RenderTargetBitmap((int)ActualWidth,(int)ActualHeight,96,96,PixelFormats.Pbgra32);cookingBitmap.Render(this);var cookingEncoder=new PngBitmapEncoder();cookingEncoder.Frames.Add(BitmapFrame.Create(cookingBitmap));using(var f=File.Create(Path.Combine(output,"cooking-sales-en.png")))cookingEncoder.Save(f);
+  CookingBox.IsChecked=false;await controlQueue;await Dispatcher.InvokeAsync(()=>{},DispatcherPriority.ApplicationIdle);
   SellThresholdBox.BringIntoView();await Dispatcher.InvokeAsync(()=>{},DispatcherPriority.ApplicationIdle);UpdateLayout();
   var saleBitmap=new RenderTargetBitmap((int)ActualWidth,(int)ActualHeight,96,96,PixelFormats.Pbgra32);saleBitmap.Render(this);var saleEncoder=new PngBitmapEncoder();saleEncoder.Frames.Add(BitmapFrame.Create(saleBitmap));using(var f=File.Create(Path.Combine(output,"surplus-sales-en.png")))saleEncoder.Save(f);
   Check((string)Resources["SalesEnabled"]=="Capacity protection always on"&&SellThresholdBox.Text=="9900","售卖设置英文可见且保留阈值");await controlQueue;await Dispatcher.InvokeAsync(()=>{},DispatcherPriority.ApplicationIdle);

@@ -2,6 +2,7 @@ using BD2Territory;
 using System.Text.Json;
 RecoveryCases.Run();AtomicSettingsCases.Run();
 CookingCases.Run();
+CookingSalesCases.Run();
 SurplusSalesCases.Run();
 BD2Territory.Runtime.RoutingAdapterTests.Run();
 BD2Territory.Runtime.GatheringPositionTests.Run();
