@@ -1,3 +1,6 @@
+> **已迁入 Dustweave，独立仓库停止维护。**
+> 最新源码与界面位于 [Dustweave / Territory](https://github.com/MadestSamurai/Dustweave/tree/main/src/Territory)，请使用 [Dustweave 最新版本](https://github.com/MadestSamurai/Dustweave/releases/latest)。后续问题请在 [Dustweave Issues](https://github.com/MadestSamurai/Dustweave/issues) 提交。原文保留供历史参考。
+
 # BD2 Territory · 领地助手
 
 > **免费开源：** 作者发布版免费提供，GitHub **MadestSamurai** · B站 **MadSamurai**。[官方下载](https://github.com/MadestSamurai/bd2-territory/releases) · [来源与风险说明](DISTRIBUTION.md)。第三方收费不代表作者参与、背书或提供服务。
